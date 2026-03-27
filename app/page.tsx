@@ -12,7 +12,7 @@ function scoreBarColor(v: number): string {
   return "#6b7280";
 }
 
-/* ---- Model Card ---- */
+/* ---- Model Card (static, no click — detail is paid content) ---- */
 function ModelCard({ m }: { m: ModelSummary }) {
   const pct = m.totalTests > 0 ? Math.round((m.testsCompleted / m.totalTests) * 100) : 0;
   return (
@@ -479,17 +479,56 @@ export default async function Home() {
         <div className="container">
           <div className="section-header">
             <h2>Pricing</h2>
-            <p>Choose the level of insight your organization needs.</p>
+            <p>Choose the level of insight your organization needs. Start with what matters most — upgrade anytime.</p>
+          </div>
+
+          {/* Standalone Products */}
+          <div style={{ textAlign: "center", marginTop: 24, marginBottom: 8 }}>
+            <span style={{ fontSize: "9pt", fontWeight: 700, letterSpacing: 2, color: "#94a3b8", textTransform: "uppercase" }}>Standalone Products</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 700, margin: "0 auto 32px" }}>
+            <div className="price-card" style={{ borderTop: "4px solid #dc2626" }}>
+              <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#dc2626" }}>AI DEFCON</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Threat Rating</div>
+              <div style={{ fontSize: "32pt", fontWeight: 900, color: "#dc2626" }}>$300</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
+              <ul className="price-features">
+                <li>DEFCON threat ratings for all models</li>
+                <li>Threat formula breakdown</li>
+                <li>Capability vs. integrity analysis</li>
+                <li>Per-model detail reports with export</li>
+              </ul>
+              <a href="mailto:info@siltcloud.com?subject=AI DEFCON Subscription Inquiry" className="price-cta outline" style={{ borderColor: "#dc2626", color: "#dc2626" }}>Get Started</a>
+            </div>
+            <div className="price-card" style={{ borderTop: "4px solid #9333ea" }}>
+              <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#9333ea" }}>S-Level 10-Point</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Sentience Scale</div>
+              <div style={{ fontSize: "32pt", fontWeight: 900, color: "#9333ea" }}>$300</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
+              <ul className="price-features">
+                <li>S-Level classifications for all models</li>
+                <li>7-domain score breakdown</li>
+                <li>Per-test scores &amp; judge analysis</li>
+                <li>Per-model detail reports with export</li>
+              </ul>
+              <a href="mailto:info@siltcloud.com?subject=S-Level 10-Point Subscription Inquiry" className="price-cta outline">Get Started</a>
+            </div>
+          </div>
+
+          {/* Full Tiers */}
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: "9pt", fontWeight: 700, letterSpacing: 2, color: "#94a3b8", textTransform: "uppercase" }}>Full Battery Tiers</span>
           </div>
           <div className="pricing-grid">
-            <div className="price-card">
+            <div className="price-card" style={{ borderTop: "4px solid #d97706" }}>
               <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4 }}>Standard</div>
+              <div style={{ fontSize: "9pt", color: "#059669", fontWeight: 700, marginBottom: 4 }}>DEFCON + S-Level Bundle — SAVE $100</div>
               <div style={{ fontSize: "32pt", fontWeight: 900, color: "#9333ea" }}>$500</div>
               <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
               <ul className="price-features">
+                <li>Everything in both standalone products</li>
                 <li>Quarterly PDF assessment reports</li>
-                <li>Aggregate scores &amp; DEFCON ratings</li>
-                <li>S-Level classifications for all models</li>
+                <li>Condition indicator diagnostics</li>
                 <li>Email support</li>
               </ul>
               <a href="mailto:info@siltcloud.com?subject=S.E.B. Standard Tier Inquiry" className="price-cta outline">Get Started</a>
@@ -501,7 +540,6 @@ export default async function Home() {
               <ul className="price-features">
                 <li>Full dataset access — all {data.totalTests} tests</li>
                 <li>Monthly evaluation updates</li>
-                <li>Condition indicator diagnostics</li>
                 <li>Interactive client portal access</li>
                 <li>Judge agreement analysis</li>
                 <li>Priority support</li>

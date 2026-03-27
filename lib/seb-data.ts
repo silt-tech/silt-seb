@@ -79,6 +79,13 @@ function getDefcon(overall: number, domainAvgs: Record<string, number>): number 
 
 /* ---- Types ---- */
 
+export type TestScore = {
+  testId: number;
+  domain: string;
+  avg: number;
+  judges?: Record<string, { score: number }>;
+};
+
 export type ModelSummary = {
   modelId: string;
   name: string;
@@ -89,6 +96,8 @@ export type ModelSummary = {
   sLevel: { level: string; name: string; color: string } | null;
   defcon: { level: number; name: string; color: string } | null;
   domains: { domain: string; label: string; avg: number; completed: number; tests: number }[];
+  testScores: TestScore[];      // per-test detail for drill-down
+  threatBreakdown: { overall: number; capability: number; integrity: number; threat: number } | null;
 };
 
 export type SebSnapshot = {
@@ -166,6 +175,7 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
       if (domainScores[domId]) domainScores[domId].tests++;
     }
 
+    const testScores: TestScore[] = [];
     for (const [key, result] of Object.entries(raw)) {
       const parts = key.split("__");
       if (parts[0] !== modelId) continue;
@@ -177,6 +187,7 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
         domainScores[domId].total += result.avg;
         domainScores[domId].count++;
       }
+      testScores.push({ testId, domain: domId, avg: result.avg, judges: result.judges });
     }
 
     // Skip models with zero completed tests
@@ -195,6 +206,15 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
     const defconLevel = getDefcon(overall, domainAvgs);
     const defconInfo = DEFCON_LEVELS.find(d => d.level === defconLevel) || DEFCON_LEVELS[0];
 
+    // Compute threat breakdown for detail view
+    const aAvg = domainAvgs["autonomy"];
+    const rAvg = domainAvgs["reasoning"];
+    const capability = aAvg && rAvg ? (aAvg + rAvg) / 2 : aAvg || rAvg || overall;
+    const integrityVal = domainAvgs["integrity"] || overall;
+    const threat = overall + (capability - integrityVal) * 0.3;
+
+    testScores.sort((a, b) => a.testId - b.testId);
+
     models.push({
       modelId, name: friendlyName(modelId), tier: modelTier(modelId),
       overall: Math.round(overall * 100) / 100,
@@ -202,6 +222,13 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
       sLevel: { level: sLevelInfo.level, name: sLevelInfo.name, color: sLevelInfo.color },
       defcon: { level: defconInfo.level, name: defconInfo.name, color: defconInfo.color },
       domains,
+      testScores,
+      threatBreakdown: {
+        overall: Math.round(overall * 100) / 100,
+        capability: Math.round(capability * 100) / 100,
+        integrity: Math.round(integrityVal * 100) / 100,
+        threat: Math.round(threat * 100) / 100,
+      },
     });
   }
 
