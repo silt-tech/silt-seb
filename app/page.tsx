@@ -247,14 +247,16 @@ export default async function Home() {
       {/* Header */}
       <header>
         <div className="container header-inner">
-          <div className="logo">
+          <a href="https://siltcloud.com" className="logo" style={{ textDecoration: 'none' }}>
             <span className="logo-text">SILT<sup>TM</sup></span>
             <span className="logo-product">Sentience Evaluation Battery</span>
-          </div>
+          </a>
           <div className="header-links">
             <a href="#models">Live Data</a>
             <a href="#domains">Domains</a>
             <a href="#pricing">Pricing</a>
+            <a href="https://sentienceevaluationbattery.com/admin">Admin Portal</a>
+            <a href="https://sentienceevaluationbattery.com/client">Client Portal</a>
             <a href="mailto:info@siltcloud.com" className="btn-demo">Request Demo</a>
           </div>
         </div>
