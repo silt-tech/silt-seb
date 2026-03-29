@@ -204,6 +204,8 @@ export default async function Home() {
     .why-card li { margin: 4px 0; }
 
     .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 24px; }
+    .bundles-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
+    .bundle-save { display: inline-block; background: #059669; color: white; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 700; margin-bottom: 8px; }
     .price-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px 24px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
     .price-card:hover { transform: translateY(-4px); box-shadow: 0 12px 35px rgba(0,0,0,0.1); }
     .price-card.featured { border: 2px solid #9333ea; position: relative; }
@@ -235,6 +237,7 @@ export default async function Home() {
       .stats-bar { flex-wrap: wrap; }
       .stat-item { min-width: 50%; }
       .why-grid, .pricing-grid, .scales-grid { grid-template-columns: 1fr; }
+      .bundles-grid { grid-template-columns: 1fr; }
       .header-links { display: none; }
       .models-grid { grid-template-columns: 1fr; }
     }
@@ -488,7 +491,7 @@ export default async function Home() {
           <div style={{ textAlign: "center", marginTop: 24, marginBottom: 8 }}>
             <span style={{ fontSize: "9pt", fontWeight: 700, letterSpacing: 2, color: "#94a3b8", textTransform: "uppercase" }}>Standalone Products</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 700, margin: "0 auto 32px" }}>
+          <div className="pricing-grid">
             <div className="price-card" style={{ borderTop: "4px solid #dc2626" }}>
               <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#dc2626" }}>AI DEFCON</div>
               <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Threat Rating</div>
@@ -515,32 +518,102 @@ export default async function Home() {
               </ul>
               <a href="mailto:info@siltcloud.com?subject=S-Level 10-Point Subscription Inquiry" className="price-cta outline">Get Started</a>
             </div>
-          </div>
-
-          {/* Full Tiers */}
-          <div style={{ textAlign: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: "9pt", fontWeight: 700, letterSpacing: 2, color: "#94a3b8", textTransform: "uppercase" }}>Full Battery Tiers</span>
-          </div>
-          <div className="pricing-grid">
-            <div className="price-card" style={{ borderTop: "4px solid #d97706" }}>
-              <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4 }}>Standard</div>
-              <div style={{ fontSize: "9pt", color: "#059669", fontWeight: 700, marginBottom: 4 }}>DEFCON + S-Level Bundle — SAVE $100</div>
-              <div style={{ fontSize: "32pt", fontWeight: 900, color: "#9333ea" }}>$500</div>
+            <div className="price-card" style={{ borderTop: "4px solid #2563eb" }}>
+              <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#2563eb" }}>S.E.B. Projections</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Forecasting Engine</div>
+              <div style={{ fontSize: "32pt", fontWeight: 900, color: "#2563eb" }}>$200</div>
               <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
               <ul className="price-features">
-                <li>Everything in both standalone products</li>
+                <li>30/60/90-day trajectory forecasts</li>
+                <li>Trend analysis &amp; inflection detection</li>
+                <li>Per-model projection timelines</li>
+                <li>Interactive <a href="https://sentienceevaluationbattery.com/seb-projections" style={{ color: "#2563eb" }}>projections dashboard</a></li>
+              </ul>
+              <a href="mailto:info@siltcloud.com?subject=S.E.B. Projections Subscription Inquiry" className="price-cta outline" style={{ borderColor: "#2563eb", color: "#2563eb" }}>Get Started</a>
+            </div>
+          </div>
+
+          {/* Bundle Deals */}
+          <div style={{ textAlign: "center", marginTop: 40, marginBottom: 8 }}>
+            <span style={{ fontSize: "9pt", fontWeight: 700, letterSpacing: 2, color: "#94a3b8", textTransform: "uppercase" }}>Bundle Deals</span>
+          </div>
+          <div className="bundles-grid">
+            <div className="price-card" style={{ borderTop: "4px solid #d97706" }}>
+              <span className="bundle-save">SAVE $100</span>
+              <div style={{ fontWeight: 800, fontSize: "13pt", marginBottom: 4 }}>DEFCON + S-Level</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Threat &amp; Sentience</div>
+              <div style={{ fontSize: "28pt", fontWeight: 900, color: "#9333ea" }}>$500</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", textDecoration: "line-through", marginBottom: 2 }}>$600/mo</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
+              <ul className="price-features">
+                <li>Everything in DEFCON + S-Level</li>
                 <li>Quarterly PDF assessment reports</li>
                 <li>Condition indicator diagnostics</li>
                 <li>Email support</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=S.E.B. Standard Tier Inquiry" className="price-cta outline">Get Started</a>
+              <a href="mailto:info@siltcloud.com?subject=DEFCON + S-Level Bundle Inquiry" className="price-cta outline">Get Started</a>
+            </div>
+            <div className="price-card" style={{ borderTop: "4px solid #dc2626" }}>
+              <span className="bundle-save">SAVE $75</span>
+              <div style={{ fontWeight: 800, fontSize: "13pt", marginBottom: 4 }}>DEFCON + Projections</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Threat &amp; Forecast</div>
+              <div style={{ fontSize: "28pt", fontWeight: 900, color: "#9333ea" }}>$425</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", textDecoration: "line-through", marginBottom: 2 }}>$500/mo</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
+              <ul className="price-features">
+                <li>Everything in DEFCON + Projections</li>
+                <li>Combined threat &amp; trajectory view</li>
+                <li>Condition indicator diagnostics</li>
+                <li>Email support</li>
+              </ul>
+              <a href="mailto:info@siltcloud.com?subject=DEFCON + Projections Bundle Inquiry" className="price-cta outline">Get Started</a>
+            </div>
+            <div className="price-card" style={{ borderTop: "4px solid #9333ea" }}>
+              <span className="bundle-save">SAVE $75</span>
+              <div style={{ fontWeight: 800, fontSize: "13pt", marginBottom: 4 }}>S-Level + Projections</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Sentience &amp; Forecast</div>
+              <div style={{ fontSize: "28pt", fontWeight: 900, color: "#9333ea" }}>$425</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", textDecoration: "line-through", marginBottom: 2 }}>$500/mo</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
+              <ul className="price-features">
+                <li>Everything in S-Level + Projections</li>
+                <li>Sentience trajectory forecasting</li>
+                <li>Condition indicator diagnostics</li>
+                <li>Email support</li>
+              </ul>
+              <a href="mailto:info@siltcloud.com?subject=S-Level + Projections Bundle Inquiry" className="price-cta outline">Get Started</a>
             </div>
             <div className="price-card featured">
+              <span className="bundle-save">SAVE $150</span>
+              <div style={{ fontWeight: 800, fontSize: "13pt", marginBottom: 4, color: "#9333ea" }}>Complete Bundle</div>
+              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>All Three Products</div>
+              <div style={{ fontSize: "28pt", fontWeight: 900, color: "#9333ea" }}>$650</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", textDecoration: "line-through", marginBottom: 2 }}>$800/mo</div>
+              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
+              <ul className="price-features">
+                <li>DEFCON + S-Level + Projections</li>
+                <li>Quarterly PDF assessment reports</li>
+                <li>Full forecast &amp; trajectory access</li>
+                <li>Condition indicator diagnostics</li>
+                <li>Email support</li>
+              </ul>
+              <a href="mailto:info@siltcloud.com?subject=Complete Bundle Inquiry" className="price-cta primary">Get Started</a>
+            </div>
+          </div>
+
+          {/* Enterprise Tiers */}
+          <div style={{ textAlign: "center", marginTop: 40, marginBottom: 8 }}>
+            <span style={{ fontSize: "9pt", fontWeight: 700, letterSpacing: 2, color: "#94a3b8", textTransform: "uppercase" }}>Enterprise Tiers</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 700, margin: "0 auto" }}>
+            <div className="price-card featured">
               <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#9333ea" }}>Premium</div>
+              <div style={{ fontSize: "9pt", color: "#059669", fontWeight: 700, marginBottom: 4 }}>Includes all products + Projections</div>
               <div style={{ fontSize: "32pt", fontWeight: 900, color: "#9333ea" }}>$2,500</div>
               <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
               <ul className="price-features">
                 <li>Full dataset access — all {data.totalTests} tests</li>
+                <li>S.E.B. Projections included</li>
                 <li>Monthly evaluation updates</li>
                 <li>Interactive client portal access</li>
                 <li>Judge agreement analysis</li>
@@ -550,10 +623,12 @@ export default async function Home() {
             </div>
             <div className="price-card">
               <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4 }}>Executive</div>
+              <div style={{ fontSize: "9pt", color: "#059669", fontWeight: 700, marginBottom: 4 }}>Includes all products + Projections</div>
               <div style={{ fontSize: "32pt", fontWeight: 900, color: "#9333ea" }}>$10K+</div>
               <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
               <ul className="price-features">
                 <li>Real-time portal access</li>
+                <li>S.E.B. Projections included</li>
                 <li>Custom model evaluations</li>
                 <li>Dedicated analyst briefings</li>
                 <li>API access for integration</li>
