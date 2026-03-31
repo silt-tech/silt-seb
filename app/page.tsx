@@ -757,17 +757,18 @@ export default async function Home() {
               padding: "28px 32px",
             }}>
               <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 12, color: "#1a1a2e" }}>
-                📣 Responsible Disclosure
+                🔒 Subscriber Data Isolation
               </div>
               <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.8 }}>
-                SILT follows a responsible disclosure protocol for high-risk findings. When a model receives a
-                DEFCON 1 or DEFCON 2 rating, the model provider is notified <strong style={{ color: "#1a1a2e" }}>48 hours</strong> prior
-                to publication and given the opportunity to review the methodology — but not to alter scores.
+                Each subscriber receives evaluation data in a <strong style={{ color: "#1a1a2e" }}>dedicated encrypted vault</strong> with
+                unique AES-256-GCM keys derived via PBKDF2 (100K iterations). Vaults are provisioned automatically
+                on account creation — no shared storage, no co-mingled data, no cross-tenant access.
               </p>
               <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.8, marginTop: 12 }}>
-                Providers may submit a factual correction request (e.g., &ldquo;this model version is deprecated&rdquo;)
-                but cannot contest evaluation outcomes. All published ratings reflect SILT&apos;s independent assessment.
-                Disclosure timelines may be shortened if a model poses an imminent safety concern.
+                All published data contains <strong style={{ color: "#1a1a2e" }}>forensic watermarks</strong> — imperceptible,
+                subscriber-specific score perturbations derived from HMAC-SHA256. If proprietary data appears
+                in unauthorized channels, the source can and will be identified and legal enforcement can and
+                will be taken under the subscriber agreement.
               </p>
             </div>
           </div>
@@ -953,7 +954,12 @@ export default async function Home() {
             <a href="https://sentienceevaluationbattery.com">sentienceevaluationbattery.com</a> &bull;{" "}
             <a href="https://siltcloud.com">siltcloud.com</a>
           </p>
-          <p style={{ marginTop: 12 }}>&copy; 2026 SILT&trade; &mdash; Sentient Index Labs &amp; Technology. All rights reserved.</p>
+          <p style={{ margin: "8px 0" }}>
+            <a href="/subscriber-agreement">Subscriber Agreement</a> &bull;{" "}
+            <a href="https://siltcloud.com/terms">Terms</a> &bull;{" "}
+            <a href="https://siltcloud.com/privacy">Privacy</a>
+          </p>
+          <p style={{ marginTop: 8 }}>&copy; 2026 SILT&trade; &mdash; Sentient Index Labs &amp; Technology. All rights reserved.</p>
 
           {/* Legal / Proprietary Data Notice */}
           <div style={{

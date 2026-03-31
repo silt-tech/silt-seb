@@ -41,6 +41,14 @@ export async function POST(req: Request) {
         metadata: { seb_plan_id: planId, tier: plan.tier },
       },
       allow_promotion_codes: true,
+      consent_collection: {
+        terms_of_service: "required",
+      },
+      custom_text: {
+        terms_of_service_acceptance: {
+          message: "I agree to the [Subscriber Agreement](https://silt-seb.com/subscriber-agreement)",
+        },
+      },
     };
 
     if (email) {
