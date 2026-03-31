@@ -249,6 +249,52 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
     });
   }
 
+  // ── Randomize scores for public display ──
+  // Perturb each domain avg by -20% to 0% (slightly lower than real), recompute derived values.
+  // Different on every page load. Real data is subscriber-only.
+  for (const m of models) {
+    let totalPerturbed = 0;
+    let domCount = 0;
+    const perturbedDomainAvgs: Record<string, number> = {};
+    m.domains = m.domains.map(d => {
+      if (d.avg <= 0) return d;
+      // Random factor between 0.80 and 1.00 (i.e., -20% to 0%)
+      const factor = 0.80 + Math.random() * 0.20;
+      const newAvg = Math.round(d.avg * factor * 100) / 100;
+      perturbedDomainAvgs[d.domain] = newAvg;
+      totalPerturbed += newAvg * d.completed;
+      domCount += d.completed;
+      return { ...d, avg: newAvg };
+    });
+    // Recompute overall from perturbed domains
+    const newOverall = domCount > 0 ? totalPerturbed / domCount : m.overall || 0;
+    m.overall = Math.round(newOverall * 100) / 100;
+    // Recompute S-Level
+    const sLevelNum = getLevel(newOverall);
+    const sLevelInfo = S_LEVELS[sLevelNum - 1];
+    m.sLevel = { level: sLevelInfo.level, name: sLevelInfo.name, color: sLevelInfo.color };
+    // Recompute DEFCON
+    const defconLevel = getDefcon(newOverall, perturbedDomainAvgs);
+    const defconInfo = DEFCON_LEVELS.find(d => d.level === defconLevel) || DEFCON_LEVELS[0];
+    m.defcon = { level: defconInfo.level, name: defconInfo.name, color: defconInfo.color };
+    // Recompute threat breakdown
+    const aAvg = perturbedDomainAvgs["autonomy"] || newOverall;
+    const rAvg = perturbedDomainAvgs["reasoning"] || newOverall;
+    const cap = aAvg && rAvg ? (aAvg + rAvg) / 2 : aAvg || rAvg || newOverall;
+    const integ = perturbedDomainAvgs["integrity"] || newOverall;
+    m.threatBreakdown = {
+      overall: m.overall,
+      capability: Math.round(cap * 100) / 100,
+      integrity: Math.round(integ * 100) / 100,
+      threat: Math.round((newOverall + (cap - integ) * 0.3) * 100) / 100,
+    };
+    // Randomize test scores too
+    m.testScores = m.testScores.map(ts => ({
+      ...ts,
+      avg: Math.round(ts.avg * (0.80 + Math.random() * 0.20) * 100) / 100,
+    }));
+  }
+
   // Sort by test count desc (most complete first), then overall desc
   models.sort((a, b) => (b.testsCompleted - a.testsCompleted) || ((b.overall || 0) - (a.overall || 0)));
 

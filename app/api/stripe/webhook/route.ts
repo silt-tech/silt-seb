@@ -100,10 +100,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   await getRedis().set(`seb:stripe:email:${email}`, customerId);
 
   // Provision user in SEB if they don't exist
+  let tempPassword = "";
   const existingHash = await getRedis().hget("seb:users", username);
   if (!existingHash) {
-    // Generate a temporary password — user will need to reset
-    const tempPassword = `seb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    tempPassword = `seb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const hash = await bcrypt.hash(tempPassword, 10);
     await getRedis().hset("seb:users", { [username]: hash });
 
@@ -127,6 +127,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       email,
     })
   );
+
+  // Auto-provision vault + publish watermarked results via seb-site admin API
+  try {
+    const sebSiteUrl = "https://www.sentienceevaluationbattery.com";
+    const adminAuth = Buffer.from(`silt:${process.env.SEB_SITE_PASSPHRASE || ""}`).toString("base64");
+
+    // Provision vault on seb-site (if user is new, also creates the SEB user)
+    if (tempPassword) {
+      await fetch(`${sebSiteUrl}/api/admin/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Basic ${adminAuth}` },
+        body: JSON.stringify({ username, password: tempPassword }),
+      }).catch(() => {});
+    }
+
+    // Publish current results to their vault (applies watermark)
+    await fetch(`${sebSiteUrl}/api/admin/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Basic ${adminAuth}` },
+      body: JSON.stringify({ username }),
+    }).catch(() => {});
+
+    console.log(`🔐 Vault provisioned + results published for ${username}`);
+  } catch {
+    console.warn(`⚠️ Vault auto-provision failed for ${username} — admin will need to publish manually`);
+  }
 
   console.log(`✅ User ${username} provisioned with tier: ${tier}, plan: ${planId}`);
 }

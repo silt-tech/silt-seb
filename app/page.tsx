@@ -1,7 +1,8 @@
 import { fetchSebSnapshot, DOMAINS_REF, DEFCON_LEVELS, S_LEVELS, type ModelSummary, type JudgeAgreement } from "@/lib/seb-data";
 import { CheckoutButton } from "./checkout-button";
 
-// On-demand revalidation only — hit /api/revalidate?secret=<token> to refresh
+// Dynamic on every request — scores are randomized samples, different each reload
+export const dynamic = "force-dynamic";
 
 /* ---- Color helpers ---- */
 const defconBg: Record<number, string> = { 5: "#eff6ff", 4: "#f0fdf4", 3: "#fffbeb", 2: "#fff7ed", 1: "#1a1a2e" };
@@ -22,9 +23,17 @@ function ModelCard({ m }: { m: ModelSummary }) {
       display: "flex", flexDirection: "column", gap: 12,
       borderTop: `3px solid ${m.defcon!.color}`,
       transition: "transform 0.2s, box-shadow 0.2s",
+      position: "relative", overflow: "hidden",
     }}>
+      {/* SAMPLE watermark */}
+      <div style={{
+        position: "absolute", top: "50%", left: "50%",
+        transform: "translate(-50%, -50%) rotate(-25deg)",
+        fontSize: "36pt", fontWeight: 900, color: "rgba(147, 51, 234, 0.07)",
+        letterSpacing: 8, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 1,
+      }}>SAMPLE</div>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 2 }}>
         <div>
           <div style={{ fontWeight: 800, fontSize: "14pt" }}>{m.name}</div>
           <div style={{
@@ -433,7 +442,7 @@ export default async function Home() {
             {withData.map(m => <ModelCard key={m.modelId} m={m} />)}
           </div>
           <div className="data-freshness">
-            Data updates automatically after each evaluation run. Last refresh: {new Date(data.fetchedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            Scores shown are randomized samples for demonstration purposes. Subscribe for real evaluation data.
           </div>
         </div>
       </section>
