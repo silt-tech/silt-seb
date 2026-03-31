@@ -2,3 +2,5 @@ node_modules/
 .next/
 .env*
 .vercel
+memory/all_credentials_2026-03-30.md
+memory/stripe_config.md

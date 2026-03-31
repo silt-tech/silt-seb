@@ -12,12 +12,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@upstash/redis": "^1.37.0",
+    "bcryptjs": "^3.0.3",
     "next": "^16.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "stripe": "^21.0.1",
     "typescript": "^6.0.2"
   }
 }

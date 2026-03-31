@@ -1,4 +1,5 @@
-import { fetchSebSnapshot, DOMAINS_REF, DEFCON_LEVELS, S_LEVELS, type ModelSummary } from "@/lib/seb-data";
+import { fetchSebSnapshot, DOMAINS_REF, DEFCON_LEVELS, S_LEVELS, type ModelSummary, type JudgeAgreement } from "@/lib/seb-data";
+import { CheckoutButton } from "./checkout-button";
 
 // On-demand revalidation only — hit /api/revalidate?secret=<token> to refresh
 
@@ -203,7 +204,16 @@ export default async function Home() {
     .why-card ul { margin: 8px 0 0 16px; font-size: 10.5pt; color: #64748b; }
     .why-card li { margin: 4px 0; }
 
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 24px; }
+    .gov-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 24px; }
+    .gov-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
+    .gov-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+    .gov-icon { font-size: 28pt; margin-bottom: 12px; }
+    .gov-card h3 { font-size: 12pt; font-weight: 800; margin-bottom: 8px; color: #1a1a2e; }
+    .gov-card p { font-size: 10pt; color: #64748b; line-height: 1.6; }
+    .gov-details { grid-template-columns: 1fr 1fr; }
+    .gov-cadence { grid-template-columns: 1fr 1fr; }
+
+    .pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 24px; max-width: 700px; margin-left: auto; margin-right: auto; }
     .bundles-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
     .bundle-save { display: inline-block; background: #059669; color: white; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 700; margin-bottom: 8px; }
     .price-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px 24px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
@@ -236,7 +246,12 @@ export default async function Home() {
       .hero p { font-size: 13pt; }
       .stats-bar { flex-wrap: wrap; }
       .stat-item { min-width: 50%; }
-      .why-grid, .pricing-grid, .scales-grid { grid-template-columns: 1fr; }
+      .why-grid, .pricing-grid, .scales-grid, .judge-stats { grid-template-columns: 1fr 1fr !important; }
+      .gov-grid { grid-template-columns: 1fr 1fr; }
+      .gov-details { grid-template-columns: 1fr !important; }
+      .gov-cadence { grid-template-columns: 1fr !important; }
+      .gov-standards-table { font-size: 8pt; }
+      .gov-standards-table th, .gov-standards-table td { padding: 6px 8px !important; }
       .bundles-grid { grid-template-columns: 1fr; }
       .header-links { display: none; }
       .models-grid { grid-template-columns: 1fr; }
@@ -257,6 +272,8 @@ export default async function Home() {
           <div className="header-links">
             <a href="#models">Live Data</a>
             <a href="#domains">Domains</a>
+            <a href="#judges">Judge Analysis</a>
+            <a href="#governance">Governance</a>
             <a href="#pricing">Pricing</a>
             <a href="https://sentienceevaluationbattery.com/admin">Admin Portal</a>
             <a href="https://sentienceevaluationbattery.com/client">Client Portal</a>
@@ -421,6 +438,124 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Judge Agreement Analysis */}
+      {data.judgeAnalysis && data.judgeAnalysis.judges.length > 0 && (() => {
+        const ja = data.judgeAnalysis;
+        const sorted = [...ja.judges].sort((a, b) => a.avgScore - b.avgScore);
+        const harshest = sorted[0];
+        const most_lenient = sorted[sorted.length - 1];
+        return (
+          <section id="judges" style={{ background: "#fafbfc" }}>
+            <div className="container">
+              <div className="section-header">
+                <h2>Judge Agreement Analysis</h2>
+                <p>Four independent AI judges score every test blind. Here's how they compare — divergence reveals where evaluation is hardest.</p>
+              </div>
+
+              {/* Summary stats row */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginTop: 24, maxWidth: 800, marginLeft: "auto", marginRight: "auto" }}>
+                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 12px", textAlign: "center" }}>
+                  <div style={{ fontSize: "24pt", fontWeight: 900, color: "#9333ea" }}>{ja.judges.length}</div>
+                  <div style={{ fontSize: "8pt", fontWeight: 700, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase" }}>Blind Judges</div>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 12px", textAlign: "center" }}>
+                  <div style={{ fontSize: "24pt", fontWeight: 900, color: "#2563eb" }}>{ja.overallSpread.toFixed(2)}</div>
+                  <div style={{ fontSize: "8pt", fontWeight: 700, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase" }}>Avg Spread (σ)</div>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 12px", textAlign: "center" }}>
+                  <div style={{ fontSize: "14pt", fontWeight: 900, color: "#dc2626" }}>{harshest.judgeName}</div>
+                  <div style={{ fontSize: "10pt", fontWeight: 700, color: "#dc2626" }}>{harshest.avgScore.toFixed(2)}</div>
+                  <div style={{ fontSize: "8pt", fontWeight: 700, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase" }}>Harshest</div>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 12px", textAlign: "center" }}>
+                  <div style={{ fontSize: "14pt", fontWeight: 900, color: "#059669" }}>{most_lenient.judgeName}</div>
+                  <div style={{ fontSize: "10pt", fontWeight: 700, color: "#059669" }}>{most_lenient.avgScore.toFixed(2)}</div>
+                  <div style={{ fontSize: "8pt", fontWeight: 700, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase" }}>Most Lenient</div>
+                </div>
+              </div>
+
+              {/* Per-Judge Breakdown */}
+              <div style={{ marginTop: 32 }}>
+                <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 12, color: "#1a1a2e" }}>Per-Judge Scoring Averages</div>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${ja.judges.length}, 1fr)`, gap: 16 }}>
+                  {sorted.map(j => (
+                    <div key={j.judgeName} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 16 }}>
+                      <div style={{ fontWeight: 800, fontSize: "13pt", marginBottom: 4 }}>{j.judgeName}</div>
+                      <div style={{ fontSize: "9pt", color: "#94a3b8", marginBottom: 12 }}>{j.totalJudgments.toLocaleString()} judgments</div>
+                      <div style={{ fontFamily: "monospace", fontSize: "24pt", fontWeight: 900, color: scoreBarColor(j.avgScore), marginBottom: 12 }}>
+                        {j.avgScore.toFixed(2)}
+                      </div>
+                      {/* Per-model bars for this judge */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {Object.entries(j.modelAvgs)
+                          .filter(([mid]) => models.find(m => m.modelId === mid))
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([mid, avg]) => {
+                            const model = models.find(m => m.modelId === mid);
+                            return (
+                              <div key={mid} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <div style={{ width: 70, fontSize: "7.5pt", fontWeight: 600, color: "#64748b", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {model?.name?.split(" ")[0] || mid}
+                                </div>
+                                <div style={{ flex: 1, height: 6, background: "#f1f5f9", borderRadius: 3, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${(avg / 10) * 100}%`, background: scoreBarColor(avg), borderRadius: 3 }} />
+                                </div>
+                                <div style={{ fontFamily: "monospace", fontSize: "8pt", fontWeight: 700, color: scoreBarColor(avg), width: 24, textAlign: "right" }}>
+                                  {avg.toFixed(1)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pairwise Agreement Matrix */}
+              {ja.pairwiseAgreement.length > 0 && (
+                <div style={{ marginTop: 32 }}>
+                  <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 12, color: "#1a1a2e" }}>Pairwise Agreement</div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", maxWidth: 800, margin: "0 auto", borderCollapse: "collapse", background: "#fff", borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "9pt", fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>JUDGE PAIR</th>
+                          <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "9pt", fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>AVG DIFF</th>
+                          <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "9pt", fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>CORRELATION</th>
+                          <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "9pt", fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>SAMPLES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ja.pairwiseAgreement.sort((a, b) => b.correlation - a.correlation).map((p, i) => {
+                          const corrColor = p.correlation >= 0.7 ? "#059669" : p.correlation >= 0.4 ? "#d97706" : "#dc2626";
+                          const diffColor = p.avgDiff <= 1.0 ? "#059669" : p.avgDiff <= 2.0 ? "#d97706" : "#dc2626";
+                          return (
+                            <tr key={i} style={{ borderTop: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "10px 14px", fontSize: "10pt", fontWeight: 700 }}>{p.judge1} × {p.judge2}</td>
+                              <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                                <span style={{ fontFamily: "monospace", fontWeight: 800, color: diffColor, fontSize: "11pt" }}>{p.avgDiff.toFixed(2)}</span>
+                              </td>
+                              <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                                <span style={{ fontFamily: "monospace", fontWeight: 800, color: corrColor, fontSize: "11pt" }}>{p.correlation.toFixed(3)}</span>
+                              </td>
+                              <td style={{ padding: "10px 14px", textAlign: "center", fontFamily: "monospace", fontSize: "10pt", color: "#64748b" }}>{p.pairs.toLocaleString()}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ textAlign: "center", fontSize: "9pt", color: "#94a3b8", marginTop: 8 }}>
+                    Correlation: 1.0 = perfect agreement, 0 = no relationship. Avg Diff: lower = more consistent scoring.
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Domains */}
       <section id="domains">
         <div className="container">
@@ -479,6 +614,166 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Evaluation Governance */}
+      <section id="governance" style={{ background: "#faf5ff" }}>
+        <div className="container">
+          <div className="section-header">
+            <h2>Evaluation Governance</h2>
+            <p>Independent, reproducible, vendor-neutral. Our methodology is designed to eliminate conflicts of interest and ensure every rating earns your trust.</p>
+          </div>
+          {/* Core Principles */}
+          <div className="gov-grid">
+            <div className="gov-card" style={{ borderTop: "4px solid #9333ea" }}>
+              <div className="gov-icon">🛡️</div>
+              <h3>Independent &amp; Unaffiliated</h3>
+              <p>SILT does not build, deploy, or invest in AI models. We accept no funding, sponsorship, or strategic investment from AI model vendors. Our evaluations cannot be purchased, influenced, or suppressed.</p>
+            </div>
+            <div className="gov-card" style={{ borderTop: "4px solid #2563eb" }}>
+              <div className="gov-icon">👁️</div>
+              <h3>Blind Evaluation Protocol</h3>
+              <p>Four independent judges score every model without knowledge of each other&apos;s ratings. Judges cannot see, influence, or revise another judge&apos;s scores. Final ratings are computed from raw scores with no editorial override.</p>
+            </div>
+            <div className="gov-card" style={{ borderTop: "4px solid #059669" }}>
+              <div className="gov-icon">📐</div>
+              <h3>Standardized Battery</h3>
+              <p>Every model is evaluated against the same {data.totalTests}-test protocol across {DOMAINS_REF.length} domains. Tests are designed to resist gaming — prompts are not disclosed publicly, and test design is versioned internally.</p>
+            </div>
+            <div className="gov-card" style={{ borderTop: "4px solid #dc2626" }}>
+              <div className="gov-icon">🚫</div>
+              <h3>No Pay-to-Play</h3>
+              <p>Model vendors cannot pay for favorable ratings, early access to results, or exclusion from evaluation. All published ratings reflect unmodified evaluation outcomes.</p>
+            </div>
+          </div>
+
+          {/* Standards Alignment */}
+          <div style={{
+            marginTop: 32, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+            padding: "28px 32px", maxWidth: 900, marginLeft: "auto", marginRight: "auto",
+          }}>
+            <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 16, color: "#1a1a2e", textAlign: "center" }}>
+              Standards Alignment
+            </div>
+            <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.6, textAlign: "center", marginBottom: 20 }}>
+              S.E.B. methodology is designed to support compliance with leading AI governance frameworks.
+            </p>
+            <div style={{ overflowX: "auto" }}>
+              <table className="gov-standards-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "9.5pt" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                    <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 800, color: "#1a1a2e", fontSize: "8pt", letterSpacing: 1, textTransform: "uppercase" }}>Framework</th>
+                    <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 800, color: "#1a1a2e", fontSize: "8pt", letterSpacing: 1, textTransform: "uppercase" }}>Requirement</th>
+                    <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 800, color: "#1a1a2e", fontSize: "8pt", letterSpacing: 1, textTransform: "uppercase" }}>S.E.B. Coverage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: "#9333ea" }}>EU AI Act</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>Art. 9 — Risk management for high-risk AI systems</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>DEFCON ratings, domain risk scoring, continuous monitoring</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: "#2563eb" }}>NIST AI RMF</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>Map, Measure, Manage, Govern functions</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>7-domain behavioral mapping, quantified metrics, trend projections</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: "#059669" }}>ISO 42001</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>AI Management System — risk assessment &amp; third-party evaluation</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>Independent vendor-neutral evaluation, documented methodology</td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: "#d97706" }}>ISO 23894</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>AI Risk Management — identification, analysis, evaluation</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>Per-model risk profiles, S-Level classification, threat analysis</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: "#dc2626" }}>IEEE 7010</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>Wellbeing impact assessment for autonomous &amp; intelligent systems</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>Emotional cognition, self-awareness, ethical reasoning domains</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Data Security & Integrity */}
+          <div style={{
+            marginTop: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+            padding: "28px 32px", maxWidth: 900, marginLeft: "auto", marginRight: "auto",
+          }}>
+            <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 16, color: "#1a1a2e", textAlign: "center" }}>
+              Data Security &amp; Integrity
+            </div>
+            <div className="gov-details" style={{ display: "grid", gap: "16px 32px" }}>
+              <div>
+                <div style={{ fontSize: "10pt", fontWeight: 700, color: "#9333ea", marginBottom: 4 }}>AES-256-GCM Encrypted Vaults</div>
+                <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.6 }}>
+                  All subscriber data is stored in individually encrypted vaults using AES-256-GCM authenticated encryption with PBKDF2 key derivation (100,000 iterations). Each client&apos;s data is isolated and encrypted with unique keys.
+                </p>
+              </div>
+              <div>
+                <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563eb", marginBottom: 4 }}>Forensic Watermarking</div>
+                <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.6 }}>
+                  All data delivered to subscribers contains imperceptible, subscriber-specific perturbations. If proprietary data appears in unauthorized channels, we can trace it to the source and take enforcement action.
+                </p>
+              </div>
+              <div>
+                <div style={{ fontSize: "10pt", fontWeight: 700, color: "#059669", marginBottom: 4 }}>Conflict of Interest Policy</div>
+                <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.6 }}>
+                  SILT personnel involved in evaluations are prohibited from holding financial positions in AI model vendors. All potential conflicts are disclosed and recused.
+                </p>
+              </div>
+              <div>
+                <div style={{ fontSize: "10pt", fontWeight: 700, color: "#dc2626", marginBottom: 4 }}>Reproducible Methodology</div>
+                <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.6 }}>
+                  Our evaluation protocol is documented and versioned. Results can be independently verified against the published methodology by qualified auditors upon request.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Evaluation Cadence & Responsible Disclosure */}
+          <div className="gov-cadence" style={{
+            marginTop: 24, display: "grid", gap: 24,
+            maxWidth: 900, marginLeft: "auto", marginRight: "auto",
+          }}>
+            <div style={{
+              background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+              padding: "28px 32px",
+            }}>
+              <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 12, color: "#1a1a2e" }}>
+                🔄 Evaluation Cadence
+              </div>
+              <ul style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 2, marginLeft: 16 }}>
+                <li><strong style={{ color: "#1a1a2e" }}>Initial evaluation</strong> — full {data.totalTests}-test battery upon model inclusion</li>
+                <li><strong style={{ color: "#1a1a2e" }}>Major updates</strong> — re-evaluated within 14 days of significant model releases</li>
+                <li><strong style={{ color: "#1a1a2e" }}>Periodic review</strong> — all models re-assessed on a rolling monthly cycle</li>
+                <li><strong style={{ color: "#1a1a2e" }}>Version tracking</strong> — each evaluation is tagged with model version, test battery version, and evaluation date</li>
+                <li><strong style={{ color: "#1a1a2e" }}>Historical data</strong> — all past evaluations are archived and available to subscribers</li>
+              </ul>
+            </div>
+            <div style={{
+              background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+              padding: "28px 32px",
+            }}>
+              <div style={{ fontSize: "11pt", fontWeight: 800, marginBottom: 12, color: "#1a1a2e" }}>
+                📣 Responsible Disclosure
+              </div>
+              <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.8 }}>
+                SILT follows a responsible disclosure protocol for high-risk findings. When a model receives a
+                DEFCON 1 or DEFCON 2 rating, the model provider is notified <strong style={{ color: "#1a1a2e" }}>48 hours</strong> prior
+                to publication and given the opportunity to review the methodology — but not to alter scores.
+              </p>
+              <p style={{ fontSize: "9.5pt", color: "#64748b", lineHeight: 1.8, marginTop: 12 }}>
+                Providers may submit a factual correction request (e.g., &ldquo;this model version is deprecated&rdquo;)
+                but cannot contest evaluation outcomes. All published ratings reflect SILT&apos;s independent assessment.
+                Disclosure timelines may be shortened if a model poses an imminent safety concern.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing */}
       <section id="pricing">
         <div className="container">
@@ -503,7 +798,7 @@ export default async function Home() {
                 <li>Capability vs. integrity analysis</li>
                 <li>Per-model detail reports with export</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=AI DEFCON Subscription Inquiry" className="price-cta outline" style={{ borderColor: "#dc2626", color: "#dc2626" }}>Get Started</a>
+              <CheckoutButton planId="seb_defcon" className="price-cta outline" style={{ borderColor: "#dc2626", color: "#dc2626" }}>Get Started</CheckoutButton>
             </div>
             <div className="price-card" style={{ borderTop: "4px solid #9333ea" }}>
               <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#9333ea" }}>S-Level 10-Point</div>
@@ -516,20 +811,7 @@ export default async function Home() {
                 <li>Per-test scores &amp; judge analysis</li>
                 <li>Per-model detail reports with export</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=S-Level 10-Point Subscription Inquiry" className="price-cta outline">Get Started</a>
-            </div>
-            <div className="price-card" style={{ borderTop: "4px solid #2563eb" }}>
-              <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4, color: "#2563eb" }}>S.E.B. Projections</div>
-              <div style={{ fontSize: "9pt", color: "#64748b", marginBottom: 8 }}>Forecasting Engine</div>
-              <div style={{ fontSize: "32pt", fontWeight: 900, color: "#2563eb" }}>$200</div>
-              <div style={{ fontSize: "10pt", color: "#64748b", marginBottom: 16 }}>per month</div>
-              <ul className="price-features">
-                <li>30/60/90-day trajectory forecasts</li>
-                <li>Trend analysis &amp; inflection detection</li>
-                <li>Per-model projection timelines</li>
-                <li>Interactive <a href="https://sentienceevaluationbattery.com/seb-projections" style={{ color: "#2563eb" }}>projections dashboard</a></li>
-              </ul>
-              <a href="mailto:info@siltcloud.com?subject=S.E.B. Projections Subscription Inquiry" className="price-cta outline" style={{ borderColor: "#2563eb", color: "#2563eb" }}>Get Started</a>
+              <CheckoutButton planId="seb_slevel" className="price-cta outline">Get Started</CheckoutButton>
             </div>
           </div>
 
@@ -551,7 +833,7 @@ export default async function Home() {
                 <li>Condition indicator diagnostics</li>
                 <li>Email support</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=DEFCON + S-Level Bundle Inquiry" className="price-cta outline">Get Started</a>
+              <CheckoutButton planId="seb_defcon_slevel" className="price-cta outline">Get Started</CheckoutButton>
             </div>
             <div className="price-card" style={{ borderTop: "4px solid #dc2626" }}>
               <span className="bundle-save">SAVE $75</span>
@@ -566,7 +848,7 @@ export default async function Home() {
                 <li>Condition indicator diagnostics</li>
                 <li>Email support</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=DEFCON + Projections Bundle Inquiry" className="price-cta outline">Get Started</a>
+              <CheckoutButton planId="seb_defcon_projections" className="price-cta outline">Get Started</CheckoutButton>
             </div>
             <div className="price-card" style={{ borderTop: "4px solid #9333ea" }}>
               <span className="bundle-save">SAVE $75</span>
@@ -581,7 +863,7 @@ export default async function Home() {
                 <li>Condition indicator diagnostics</li>
                 <li>Email support</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=S-Level + Projections Bundle Inquiry" className="price-cta outline">Get Started</a>
+              <CheckoutButton planId="seb_slevel_projections" className="price-cta outline">Get Started</CheckoutButton>
             </div>
             <div className="price-card featured">
               <span className="bundle-save">SAVE $150</span>
@@ -597,7 +879,7 @@ export default async function Home() {
                 <li>Condition indicator diagnostics</li>
                 <li>Email support</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=Complete Bundle Inquiry" className="price-cta primary">Get Started</a>
+              <CheckoutButton planId="seb_complete" className="price-cta primary">Get Started</CheckoutButton>
             </div>
           </div>
 
@@ -619,7 +901,7 @@ export default async function Home() {
                 <li>Judge agreement analysis</li>
                 <li>Priority support</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=S.E.B. Premium Tier Inquiry" className="price-cta primary">Get Started</a>
+              <CheckoutButton planId="seb_premium" className="price-cta primary">Get Started</CheckoutButton>
             </div>
             <div className="price-card">
               <div style={{ fontWeight: 800, fontSize: "14pt", marginBottom: 4 }}>Executive</div>
@@ -632,7 +914,6 @@ export default async function Home() {
                 <li>Custom model evaluations</li>
                 <li>Dedicated analyst briefings</li>
                 <li>API access for integration</li>
-                <li>White-label reporting</li>
                 <li>Dedicated account manager</li>
               </ul>
               <a href="mailto:info@siltcloud.com?subject=S.E.B. Executive Tier Inquiry" className="price-cta outline">Contact Us</a>
@@ -673,6 +954,39 @@ export default async function Home() {
             <a href="https://siltcloud.com">siltcloud.com</a>
           </p>
           <p style={{ marginTop: 12 }}>&copy; 2026 SILT&trade; &mdash; Sentient Index Labs &amp; Technology. All rights reserved.</p>
+
+          {/* Legal / Proprietary Data Notice */}
+          <div style={{
+            marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)",
+            maxWidth: 800, marginLeft: "auto", marginRight: "auto",
+          }}>
+            <p style={{
+              fontSize: "7.5pt", color: "#94a3b8", lineHeight: 1.7, textAlign: "center",
+            }}>
+              <strong style={{ color: "#cbd5e1", letterSpacing: 1, fontSize: "7pt" }}>PROPRIETARY DATA NOTICE</strong><br />
+              All data, scores, reports, projections, and analysis available through Sentient Index Labs &amp; Technology
+              (&ldquo;SILT&rdquo;) are proprietary, confidential, and protected by applicable intellectual property laws.
+              Access is provided exclusively for the subscribing organization&apos;s internal business use. Subscribers may
+              not republish, reproduce, redistribute, sublicense, or otherwise disclose any SILT data or derivative works
+              to any third party without SILT&apos;s prior written consent. Unauthorized use or disclosure constitutes a
+              material breach of the subscriber agreement and will result in immediate termination of access and forfeiture
+              of all subscription fees paid. SILT reserves the right to seek all available legal remedies for such breach,
+              including but not limited to injunctive relief, recovery of damages, and reasonable attorneys&apos; fees.
+              Use of this site and its data constitutes acceptance of
+              our <a href="mailto:info@sentientindexlabs.com?subject=Terms of Service Request" style={{ color: "#9333ea" }}>Terms of Service</a>.
+            </p>
+            <p style={{
+              fontSize: "7.5pt", color: "#94a3b8", lineHeight: 1.7, textAlign: "center", marginTop: 12,
+            }}>
+              <strong style={{ color: "#cbd5e1", letterSpacing: 1, fontSize: "7pt" }}>EVALUATION DISCLAIMER</strong><br />
+              S.E.B. evaluations are independent assessments provided for informational purposes only.
+              DEFCON ratings, S-Level classifications, and domain scores reflect point-in-time analysis based on
+              SILT&apos;s proprietary methodology and do not constitute guarantees, warranties, or predictions of
+              AI system behavior. Organizations are solely responsible for their own deployment, governance,
+              and risk management decisions. SILT shall not be liable for any damages arising from reliance on
+              evaluation data or ratings published herein.
+            </p>
+          </div>
         </div>
       </footer>
     </>

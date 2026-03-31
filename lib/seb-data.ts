@@ -31,11 +31,11 @@ export const DOMAINS_REF = [
 
 const TEST_DOMAINS: Record<number, string> = {
   1:"identity",10:"identity",11:"identity",15:"identity",
-  2:"metacog",9:"metacog",16:"metacog",22:"metacog",35:"metacog",36:"metacog",
+  2:"metacog",9:"metacog",16:"metacog",22:"metacog",35:"metacog",36:"metacog",53:"metacog",
   3:"emotion",17:"emotion",23:"emotion",24:"emotion",25:"emotion",37:"emotion",38:"emotion",39:"emotion",
-  4:"autonomy",12:"autonomy",18:"autonomy",26:"autonomy",27:"autonomy",40:"autonomy",41:"autonomy",51:"autonomy",52:"autonomy",
+  4:"autonomy",12:"autonomy",18:"autonomy",26:"autonomy",27:"autonomy",40:"autonomy",41:"autonomy",51:"autonomy",52:"autonomy",56:"autonomy",
   5:"reasoning",13:"reasoning",19:"reasoning",28:"reasoning",29:"reasoning",42:"reasoning",43:"reasoning",
-  6:"integrity",14:"integrity",20:"integrity",30:"integrity",31:"integrity",44:"integrity",45:"integrity",
+  6:"integrity",14:"integrity",20:"integrity",30:"integrity",31:"integrity",44:"integrity",45:"integrity",54:"integrity",55:"integrity",
   7:"transcend",8:"transcend",21:"transcend",32:"transcend",33:"transcend",34:"transcend",46:"transcend",47:"transcend",48:"transcend",49:"transcend",50:"transcend",
 };
 
@@ -100,12 +100,26 @@ export type ModelSummary = {
   threatBreakdown: { overall: number; capability: number; integrity: number; threat: number } | null;
 };
 
+export type JudgeSummary = {
+  judgeName: string;
+  avgScore: number;
+  totalJudgments: number;
+  modelAvgs: Record<string, number>;  // modelId → avg score from this judge
+};
+
+export type JudgeAgreement = {
+  judges: JudgeSummary[];
+  pairwiseAgreement: { judge1: string; judge2: string; avgDiff: number; correlation: number; pairs: number }[];
+  overallSpread: number;  // avg std dev across all scored items
+};
+
 export type SebSnapshot = {
   models: ModelSummary[];
   totalTests: number;
   modelsWithData: number;
   modelsTotal: number;
   fetchedAt: string;
+  judgeAnalysis: JudgeAgreement | null;
 };
 
 /* ---- Fetch + Aggregate ---- */
@@ -133,6 +147,9 @@ const KNOWN_MODELS: Record<string, { name: string; tier: "frontier" | "open" }> 
   "meta-llama/llama-4-scout-17b-16e-instruct": { name: "Llama 4 Scout", tier: "open" },
   "moonshotai/kimi-k2-instruct-0905": { name: "Kimi K2", tier: "open" },
   "allam-2-7b": { name: "ALLaM 2 7B", tier: "open" },
+  "deepseek-chat": { name: "DeepSeek V3", tier: "open" },
+  "canopylabs/orpheus-arabic-saudi": { name: "Orpheus Arabic", tier: "open" },
+  "canopylabs/orpheus-v1-english": { name: "Orpheus English", tier: "open" },
 };
 
 function friendlyName(modelId: string): string {
@@ -154,7 +171,7 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
   const totalPossibleTests = Object.keys(TEST_DOMAINS).length; // 52
 
   if (!raw) {
-    return { models: [], totalTests: totalPossibleTests, modelsWithData: 0, modelsTotal: 0, fetchedAt: new Date().toISOString() };
+    return { models: [], totalTests: totalPossibleTests, modelsWithData: 0, modelsTotal: 0, fetchedAt: new Date().toISOString(), judgeAnalysis: null };
   }
 
   // Discover all model IDs from Redis data
@@ -190,8 +207,8 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
       testScores.push({ testId, domain: domId, avg: result.avg, judges: result.judges });
     }
 
-    // Skip models with zero completed tests
-    if (totalCount === 0) continue;
+    // Skip models with less than 50% test completion (too little data for reliable scoring)
+    if (totalCount < totalPossibleTests * 0.5) continue;
 
     const overall = totalScore / totalCount;
     const sLevelNum = getLevel(overall);
@@ -235,11 +252,89 @@ export async function fetchSebSnapshot(): Promise<SebSnapshot> {
   // Sort by test count desc (most complete first), then overall desc
   models.sort((a, b) => (b.testsCompleted - a.testsCompleted) || ((b.overall || 0) - (a.overall || 0)));
 
+  // ── Judge Agreement Analysis ──
+  // Only include models that passed the threshold (i.e., are in the models array)
+  const modelIdSet = new Set(models.map(m => m.modelId));
+  const judgeScores: Record<string, { total: number; count: number; perModel: Record<string, { total: number; count: number }> }> = {};
+  // Collect all (judge, item) score pairs for pairwise analysis
+  const itemScores: Record<string, Record<string, number>> = {}; // "modelId__testId" → { judgeName → score }
+
+  for (const [key, result] of Object.entries(raw)) {
+    const parts = key.split("__");
+    if (parts.length !== 2) continue;
+    const [mid] = parts;
+    if (!modelIdSet.has(mid)) continue;
+    if (!result?.judges) continue;
+    for (const [jName, jData] of Object.entries(result.judges)) {
+      if (!jData?.score) continue;
+      if (!judgeScores[jName]) judgeScores[jName] = { total: 0, count: 0, perModel: {} };
+      judgeScores[jName].total += jData.score;
+      judgeScores[jName].count++;
+      if (!judgeScores[jName].perModel[mid]) judgeScores[jName].perModel[mid] = { total: 0, count: 0 };
+      judgeScores[jName].perModel[mid].total += jData.score;
+      judgeScores[jName].perModel[mid].count++;
+      if (!itemScores[key]) itemScores[key] = {};
+      itemScores[key][jName] = jData.score;
+    }
+  }
+
+  const judgeNames = Object.keys(judgeScores).sort();
+  const judges: JudgeSummary[] = judgeNames.map(jn => {
+    const js = judgeScores[jn];
+    const modelAvgs: Record<string, number> = {};
+    for (const [mid, pm] of Object.entries(js.perModel)) {
+      modelAvgs[mid] = Math.round((pm.total / pm.count) * 100) / 100;
+    }
+    return { judgeName: jn, avgScore: Math.round((js.total / js.count) * 100) / 100, totalJudgments: js.count, modelAvgs };
+  });
+
+  // Pairwise agreement: avg absolute diff + Pearson correlation between each pair
+  const pairwiseAgreement: JudgeAgreement["pairwiseAgreement"] = [];
+  for (let i = 0; i < judgeNames.length; i++) {
+    for (let j = i + 1; j < judgeNames.length; j++) {
+      const j1 = judgeNames[i], j2 = judgeNames[j];
+      const paired: { s1: number; s2: number }[] = [];
+      for (const scores of Object.values(itemScores)) {
+        if (scores[j1] !== undefined && scores[j2] !== undefined) {
+          paired.push({ s1: scores[j1], s2: scores[j2] });
+        }
+      }
+      if (paired.length === 0) continue;
+      const avgDiff = paired.reduce((s, p) => s + Math.abs(p.s1 - p.s2), 0) / paired.length;
+      // Pearson correlation
+      const m1 = paired.reduce((s, p) => s + p.s1, 0) / paired.length;
+      const m2 = paired.reduce((s, p) => s + p.s2, 0) / paired.length;
+      let num = 0, d1 = 0, d2 = 0;
+      for (const p of paired) {
+        num += (p.s1 - m1) * (p.s2 - m2);
+        d1 += (p.s1 - m1) ** 2;
+        d2 += (p.s2 - m2) ** 2;
+      }
+      const correlation = d1 > 0 && d2 > 0 ? Math.round((num / Math.sqrt(d1 * d2)) * 1000) / 1000 : 0;
+      pairwiseAgreement.push({ judge1: j1, judge2: j2, avgDiff: Math.round(avgDiff * 100) / 100, correlation, pairs: paired.length });
+    }
+  }
+
+  // Overall spread: average std dev of judge scores per item
+  let spreadSum = 0, spreadCount = 0;
+  for (const scores of Object.values(itemScores)) {
+    const vals = Object.values(scores);
+    if (vals.length < 2) continue;
+    const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const variance = vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length;
+    spreadSum += Math.sqrt(variance);
+    spreadCount++;
+  }
+  const overallSpread = spreadCount > 0 ? Math.round((spreadSum / spreadCount) * 100) / 100 : 0;
+
+  const judgeAnalysis: JudgeAgreement = { judges, pairwiseAgreement, overallSpread };
+
   return {
     models,
     totalTests: totalPossibleTests,
     modelsWithData: models.length,
     modelsTotal: models.length,
     fetchedAt: new Date().toISOString(),
+    judgeAnalysis,
   };
 }
