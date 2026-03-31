@@ -294,7 +294,7 @@ export default async function Home() {
             <a href="#pricing">Pricing</a>
             <a href="https://sentienceevaluationbattery.com/admin">Admin Portal</a>
             <a href="https://sentienceevaluationbattery.com/client">Client Portal</a>
-            <a href="mailto:info@siltcloud.com" className="btn-demo">Request Demo</a>
+            <a href="mailto:info@sentientindexlabs.com" className="btn-demo">Request Demo</a>
           </div>
         </div>
       </header>
@@ -306,7 +306,7 @@ export default async function Home() {
           <h1>Know What Your<br />AI Is Becoming</h1>
           <p>The industry's first independent behavioral risk assessment for AI systems. {data.totalTests} tests. 4 blind judges. DEFCON threat ratings.</p>
           <div className="hero-cta">
-            <a href="mailto:info@siltcloud.com" className="btn-primary">Request a Demo</a>
+            <a href="mailto:info@sentientindexlabs.com" className="btn-primary">Request a Demo</a>
             <a href="/SEB_Sample_Report.pdf" className="btn-secondary">Download Sample Report</a>
           </div>
           <div className="stats-bar">
@@ -949,7 +949,7 @@ export default async function Home() {
                 <li>API access for integration</li>
                 <li>Dedicated account manager</li>
               </ul>
-              <a href="mailto:info@siltcloud.com?subject=S.E.B. Executive Tier Inquiry" className="price-cta outline">Contact Us</a>
+              <a href="mailto:info@sentientindexlabs.com?subject=S.E.B. Executive Tier Inquiry" className="price-cta outline">Contact Us</a>
             </div>
           </div>
         </div>
@@ -969,7 +969,7 @@ export default async function Home() {
         <div className="container">
           <h2 style={{ fontSize: "24pt", fontWeight: 900, marginBottom: 8 }}>Ready to Evaluate?</h2>
           <p style={{ fontSize: "13pt", color: "#64748b", marginBottom: 24 }}>Schedule a 15-minute demo and see how S.E.B. data applies to your AI deployment decisions.</p>
-          <a href="mailto:info@siltcloud.com?subject=S.E.B. Demo Request" className="btn-primary">Request a Demo</a>
+          <a href="mailto:info@sentientindexlabs.com?subject=S.E.B. Demo Request" className="btn-primary">Request a Demo</a>
           <div className="portal-links">
             <a href="https://sentienceevaluationbattery.com/admin" className="portal-link">Admin Portal &rarr;</a>
             <a href="https://sentienceevaluationbattery.com/client" className="portal-link">Client Portal &rarr;</a>
