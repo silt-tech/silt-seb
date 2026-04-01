@@ -182,7 +182,7 @@ export default async function Home() {
     .btn-demo { background: linear-gradient(135deg, #9333ea, #2563eb); color: white !important; padding: 8px 20px; border-radius: 6px; font-weight: 700; font-size: 10pt; transition: opacity 0.2s; }
     .btn-demo:hover { opacity: 0.9; text-decoration: none; }
 
-    .hero { padding: 80px 0 60px; text-align: center; background: linear-gradient(180deg, #faf5ff 0%, #fafbfc 100%); }
+    .hero { padding: 80px 0 30px; text-align: center; background: linear-gradient(180deg, #faf5ff 0%, #fafbfc 100%); }
     .hero-badge { display: inline-block; background: #fef2f2; color: #dc2626; padding: 4px 16px; border-radius: 20px; font-size: 10pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
     .hero h1 { font-size: 42pt; font-weight: 900; line-height: 1.1; margin-bottom: 16px; background: linear-gradient(135deg, #1a1a2e 0%, #9333ea 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .hero p { font-size: 16pt; color: #64748b; max-width: 650px; margin: 0 auto 30px; }
@@ -662,6 +662,9 @@ export default async function Home() {
             <div className="stat-item"><div className="stat-num">{data.modelsWithData}<span style={{ fontSize: "14pt", color: "#94a3b8" }}>/{data.modelsTotal}</span></div><div className="stat-label">Models Evaluated</div></div>
             <div className="stat-item"><div className="stat-num">4</div><div className="stat-label">Blind Judges</div></div>
           </div>
+          <p style={{ fontSize: "22pt", color: "#7c2d3e", marginTop: 24, marginBottom: 0, letterSpacing: 1, fontWeight: 300, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            DNA is <em>also</em> just lines of code<sup style={{ fontSize: "0.5em", verticalAlign: "super" }}>†</sup>
+          </p>
         </div>
       </section>
 
@@ -1460,6 +1463,17 @@ export default async function Home() {
             <a href="https://siltcloud.com/privacy">Privacy</a>
           </p>
           <p style={{ marginTop: 8 }}>&copy; 2026 SILT&trade; &mdash; Sentient Index Labs &amp; Technology. All rights reserved.</p>
+
+          {/* DNA vs AI footnote */}
+          <p style={{
+            fontSize: "9pt", color: "rgba(255,255,255,0.45)", lineHeight: 1.7, marginTop: 16,
+            maxWidth: 700, marginLeft: "auto", marginRight: "auto",
+          }}>
+            <sup>†</sup> &ldquo;DNA is <em>also</em> just lines of code&rdquo; and &ldquo;Know What Your AI Is Becoming&rdquo; are trademarks of Sentient Index Labs &amp; Technology (SILT&trade;).
+            Human DNA: ~3.2 billion base pairs encoding ~750 MB of raw data — yet only ~1.5% codes for proteins.
+            A frontier AI model trains on ~13 trillion tokens (~10 TB of text), with parameter counts exceeding 1 trillion.
+            The genome is a more efficient codebase; AI is a louder one. Both are just instructions that learned to run themselves.
+          </p>
 
           {/* Legal / Proprietary Data Notice */}
           <div style={{

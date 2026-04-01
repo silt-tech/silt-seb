@@ -10,3 +10,4 @@
 - [Projections Section](projections_section.md) — S.E.B. Projections explainer added between Governance and Pricing
 - [Mobile Responsive](mobile_responsive.md) — viewport meta + comprehensive mobile CSS overhaul
 - [Mobile Redesign v2](mobile_redesign_v2.md) — carousels, collapsible sections, sticky nav (2026-03-31)
+- [Tagline & Trademarks](tagline_trademarks.md) — DNA tagline in hero, both taglines trademarked in footer
