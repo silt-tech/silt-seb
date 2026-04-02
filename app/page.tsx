@@ -403,6 +403,9 @@ export default async function Home() {
       .model-strip { padding: 14px 0; }
       .model-strip span { font-size: 8pt; margin: 0 4px; }
       .sweep-red, .sweep-blue { height: 3px; }
+      .sweep-red::after { animation-duration: 2.5s !important; }
+      .sweep-blue::after { animation-duration: 2.5s !important; }
+      .logo { animation-duration: 9s !important; }
 
       /* -- Education links → horizontal scroll -- */
       .edu-links {
