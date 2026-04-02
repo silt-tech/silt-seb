@@ -171,9 +171,9 @@ export default async function Home() {
     }
 
     .sweep-red { position: relative; height: 4px; background: #0f0a1a; overflow: hidden; }
-    .sweep-red::after { content: ''; position: absolute; top: 0; height: 100%; width: 12%; background: linear-gradient(90deg, transparent, #dc2626, transparent); animation: sweepRight 3s ease-in-out infinite; box-shadow: 0 0 6px #dc2626; }
+    .sweep-red::after { content: ''; position: absolute; top: 0; height: 100%; width: 18%; background: linear-gradient(90deg, transparent, #dc2626, transparent); animation: sweepRight 3s ease-in-out infinite; box-shadow: 0 0 6px #dc2626; }
     .sweep-blue { position: relative; height: 4px; background: #0f0a1a; overflow: hidden; }
-    .sweep-blue::after { content: ''; position: absolute; top: 0; height: 100%; width: 12%; background: linear-gradient(90deg, transparent, #2563eb, transparent); animation: sweepLeft 3s ease-in-out infinite; box-shadow: 0 0 6px #2563eb; }
+    .sweep-blue::after { content: ''; position: absolute; top: 0; height: 100%; width: 18%; background: linear-gradient(90deg, transparent, #2563eb, transparent); animation: sweepLeft 3s ease-in-out infinite; box-shadow: 0 0 6px #2563eb; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     a { color: #9333ea; text-decoration: none; }
