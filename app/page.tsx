@@ -707,12 +707,12 @@ export default async function Home() {
           display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12,
         }}>
           {[
-            { label: "The Code That Wakes Up", hash: "code-wakes-up", color: "#9333ea" },
-            { label: "Who Needs AI Governance", hash: "who-needs-governance", color: "#dc2626" },
-            { label: "The SEB Framework", hash: "seb-framework", color: "#2563eb" },
-            { label: "For Your Organization", hash: "for-your-org", color: "#059669" },
+            { label: "The Code That Wakes Up", key: "why-it-matters", color: "#9333ea" },
+            { label: "Sectors Requiring AI Governance", key: "sectors-governance", color: "#dc2626" },
+            { label: "The Sentience Evaluation Battery", key: "seb-framework", color: "#2563eb" },
+            { label: "Custom AI Governance Training", key: "training-contact", color: "#059669" },
           ].map(tab => (
-            <a key={tab.hash} href={`https://siltcloud.com/silt-education#${tab.hash}`}
+            <a key={tab.key} href={`https://siltcloud.com/silt-education#${tab.key}`}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "12px 16px", borderRadius: 10, textDecoration: "none",
