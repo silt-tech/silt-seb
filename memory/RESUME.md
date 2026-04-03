@@ -1,27 +1,20 @@
 # Resume Point — 2026-04-02
 
 ## Current Task
-Scanner animations + model strip redesign. All deployed to Vercel.
+Favicon/icons — done and deployed.
 
 ## State
 - Branch: main, clean (all committed + pushed + deployed)
-- Last deploy: 25faf53 — live at silt-seb.com
+- Last deploy: 0fc613c — live at silt-seb.com
 
 ## Completed This Session
-1. Red/blue scanner sweeps on model strip (red L→R top, blue R→L bottom, 4px, 3s desktop)
-2. SILT logo: black text with red swish scanning L→R across "SILT™ Sentience Evaluation Battery" (7s)
-3. Model strip layout: removed pipes, flexbox centered, added "MODELS SUBJECTED TO FULL BATTERY..." header
-4. Request Demo button: shrunk ~20%, nudged up 2px
-5. Mobile overrides: 3px sweeps, 2s timing, 9s logo swish
-6. Deployed 5 times iterating on timing/width/colors
-7. Removed header sweep bar (user preferred clean header)
-
-## Animation Speeds (final)
-- SILT logo swish: 7s linear (desktop), 9s (mobile)
-- Model strip red sweep: 3s ease-in-out (desktop), 2s (mobile)
-- Model strip blue sweep: 3s ease-in-out (desktop), 2s (mobile)
-- Sweep height: 4px desktop, 3px mobile
-- Sweep width: 18%
+1. Created favicon.ico (16/32/48 multi-size) from SILT Eye of Horus logo
+2. Created icon.png (512px) for modern browsers
+3. Created apple-icon.png (180px) for Apple devices
+4. White logo on dark navy (#1a1a2e) background
+5. Original SVG was 185KB — used rendered PNGs instead (34KB max)
+6. Next.js App Router auto-discovers these from app/ directory
+7. Committed, pushed, deployed to Vercel
 
 ## Open Bugs
 - Twitter bot workflow failing (GitHub Actions)
@@ -33,6 +26,5 @@ Scanner animations + model strip redesign. All deployed to Vercel.
 3. Expand model fleet beyond current set
 
 ## Context
-- Always commit + push + deploy (user can't check mobile without deploy)
-- Logo gradient on .logo wrapper spans both SILT™ and Sentience Evaluation Battery
-- User iterated ~15 times on timing — current values are final
+- SILT logo source: ~/Desktop/SENTIENCE/SILT_logo symbol only_2026 (1).svg
+- Always commit + push + deploy
