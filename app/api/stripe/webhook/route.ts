@@ -1,9 +1,33 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import {
+  stripe,
+  getPlan,
+  parseEntitlements,
+  serializeEntitlements,
+  NO_ENTITLEMENTS,
+  USER_ENTITLEMENTS_KEY,
+  type Entitlements,
+} from "@/lib/stripe";
 import { getRedis } from "@/lib/redis";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 import bcrypt from "bcryptjs";
+
+/**
+ * Resolve entitlements from a subscription's metadata, falling back to
+ * the plan definition if the metadata was written before entitlements
+ * existed (pre-2026-04-22 subscriptions).
+ */
+function resolveEntitlements(
+  metadata: Stripe.Metadata | null | undefined,
+  planId: string,
+): Entitlements {
+  if (metadata?.entitlements) {
+    return parseEntitlements(metadata.entitlements);
+  }
+  const plan = getPlan(planId);
+  return plan ? { ...plan.entitlements } : { ...NO_ENTITLEMENTS };
+}
 
 /**
  * POST /api/stripe/webhook
@@ -112,8 +136,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log(`New user provisioned: ${username} (${email}) — temp password stored for 24h`);
   }
 
-  // Set tier
+  // Set tier (support level — orthogonal to data access)
   await getRedis().hset("seb:user-tiers", { [username]: tier });
+
+  // Set entitlements (data access — the source of truth for what they can see)
+  const entitlements = resolveEntitlements(session.metadata, planId);
+  await getRedis().hset(USER_ENTITLEMENTS_KEY, {
+    [username]: serializeEntitlements(entitlements),
+  });
 
   // Store subscription details on user
   await getRedis().set(
@@ -123,6 +153,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       customerId,
       planId,
       tier,
+      entitlements,
       status: "active",
       email,
     })
@@ -154,7 +185,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.warn(`⚠️ Vault auto-provision failed for ${username} — admin will need to publish manually`);
   }
 
-  console.log(`✅ User ${username} provisioned with tier: ${tier}, plan: ${planId}`);
+  console.log(
+    `✅ User ${username} provisioned — plan: ${planId}, tier: ${tier}, ` +
+    `entitlements: ${Object.entries(entitlements).filter(([, v]) => v).map(([k]) => k).join("+") || "none"}`
+  );
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
@@ -173,11 +207,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const planId = subscription.metadata?.seb_plan_id ?? "";
   const status = subscription.status;
 
-  // Update tier
+  const entitlements = resolveEntitlements(subscription.metadata, planId);
+
+  // Update tier + entitlements
   if (status === "active" || status === "trialing") {
     await getRedis().hset("seb:user-tiers", { [username]: tier });
+    await getRedis().hset(USER_ENTITLEMENTS_KEY, {
+      [username]: serializeEntitlements(entitlements),
+    });
   } else if (status === "past_due" || status === "unpaid") {
-    // Keep tier but flag status
+    // Keep tier + entitlements but flag status
     console.warn(`⚠️ Subscription ${status} for ${username}`);
   }
 
@@ -189,12 +228,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       customerId,
       planId,
       tier,
+      entitlements,
       status,
       email: (customer as Record<string, string>).email,
     })
   );
 
-  console.log(`📝 Subscription updated for ${username}: ${status}, tier: ${tier}`);
+  console.log(
+    `📝 Subscription updated for ${username}: ${status}, tier: ${tier}, ` +
+    `entitlements: ${Object.entries(entitlements).filter(([, v]) => v).map(([k]) => k).join("+") || "none"}`
+  );
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -205,8 +248,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const customer = typeof stored === "string" ? JSON.parse(stored) : stored;
   const username = (customer as Record<string, string>).username;
 
-  // Remove tier (revoke access)
+  // Remove tier AND entitlements (fully revoke access)
   await getRedis().hdel("seb:user-tiers", username);
+  await getRedis().hdel(USER_ENTITLEMENTS_KEY, username);
 
   // Update subscription status
   await getRedis().set(
@@ -216,6 +260,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       customerId,
       planId: subscription.metadata?.seb_plan_id ?? "",
       tier: "none",
+      entitlements: NO_ENTITLEMENTS,
       status: "cancelled",
       email: (customer as Record<string, string>).email,
       cancelledAt: new Date().toISOString(),
