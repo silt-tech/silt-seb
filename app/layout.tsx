@@ -7,7 +7,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "S.E.B. — Sentience Evaluation Battery | SILT",
-  description: "The first independent AI behavioral risk assessment. 52 tests, 4 blind judges, DEFCON threat ratings. Know what your AI is becoming.",
+  description: "The first independent AI behavioral risk assessment. 58 tests, 4 blind judges, DEFCON threat ratings. Know what your AI is becoming.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

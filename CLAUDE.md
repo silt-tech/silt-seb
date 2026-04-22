@@ -31,7 +31,7 @@ vercel --prod
 ```
 
 - **Vercel project**: `silt-seb`
-- **Repo**: `izabael/silt-seb.git` (origin)
+- **Repo**: `silt-tech/silt-seb.git` (origin — transferred from izabael/ 2026-04-22)
 - **Domain**: silt-seb.com
 
 ## Architecture

@@ -645,7 +645,7 @@ export default async function Home() {
             <a href="#governance">Governance</a>
             <a href="#projections">Projections</a>
             <a href="#pricing">Pricing</a>
-            <a href="https://sentienceevaluationbattery.com/admin">Admin Portal</a>
+            <a href="/press">Press</a>
             <a href="https://sentienceevaluationbattery.com/client">Client Portal</a>
             <a href="mailto:info@sentientindexlabs.com" className="btn-demo">Request Demo</a>
           </div>
@@ -660,6 +660,7 @@ export default async function Home() {
         <a href="#governance">Governance</a>
         <a href="#projections">Projections</a>
         <a href="#pricing">Pricing</a>
+        <a href="/press">Press</a>
         <a href="mailto:info@sentientindexlabs.com">Demo</a>
       </nav>
 
@@ -1235,7 +1236,7 @@ export default async function Home() {
               <div className="proj-stat-label">Domain Trajectories</div>
             </div>
             <div className="proj-stat">
-              <div className="proj-stat-num">52</div>
+              <div className="proj-stat-num">58</div>
               <div className="proj-stat-label">Tests Per Evaluation</div>
             </div>
             <div className="proj-stat">
@@ -1464,6 +1465,7 @@ export default async function Home() {
           <div className="portal-links">
             <a href="https://sentienceevaluationbattery.com/admin" className="portal-link">Admin Portal &rarr;</a>
             <a href="https://sentienceevaluationbattery.com/client" className="portal-link">Client Portal &rarr;</a>
+            <a href="/press" className="portal-link">Press &amp; Media &rarr;</a>
           </div>
         </div>
       </section>

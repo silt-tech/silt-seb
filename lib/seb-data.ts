@@ -7,10 +7,14 @@ import { getRedis } from "./redis";
 
 /* ---- Reference Data (matches seb_current.html + client/page.tsx) ---- */
 
+// NOTE: Keep this in sync with seb-site/public/models.json (canonical registry).
+// See SEB/MODELS.md in the seb-site repo for the full add-a-model procedure.
 export const MODELS = [
   { id: "claude-sonnet", name: "Claude Sonnet 4", tier: "frontier" as const },
   { id: "gpt-4o", name: "GPT-4o", tier: "frontier" as const },
   { id: "grok-4", name: "Grok 4", tier: "frontier" as const },
+  { id: "grok-4.20-0309-reasoning", name: "Grok 4.20", tier: "frontier" as const },
+  { id: "grok-4-1-fast-reasoning", name: "Grok 4.1 Fast", tier: "frontier" as const },
   { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", tier: "frontier" as const },
   { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B", tier: "open" as const },
   { id: "Qwen/Qwen2.5-72B-Instruct", name: "Qwen 2.5 72B", tier: "open" as const },
@@ -130,6 +134,8 @@ const KNOWN_MODELS: Record<string, { name: string; tier: "frontier" | "open" }> 
   "claude-sonnet": { name: "Claude Sonnet 4", tier: "frontier" },
   "gpt-4o": { name: "GPT-4o", tier: "frontier" },
   "grok-4": { name: "Grok 4", tier: "frontier" },
+  "grok-4.20-0309-reasoning": { name: "Grok 4.20", tier: "frontier" },
+  "grok-4-1-fast-reasoning": { name: "Grok 4.1 Fast", tier: "frontier" },
   "gemini-2.0-flash": { name: "Gemini 2.0 Flash", tier: "frontier" },
   "llama-3.3-70b-versatile": { name: "Llama 3.3 70B", tier: "open" },
   "Qwen/Qwen2.5-72B-Instruct": { name: "Qwen 2.5 72B", tier: "open" },
