@@ -1,37 +1,40 @@
-# Resume Point — 2026-04-22 (end of day)
+# Resume Point — 2026-04-22 (late evening, deletion-flow session)
 
 ## Current Task
-**PARKED.** End-to-end sign-up → access-control → data-visibility flow shipped and live across both silt-seb (pricing/checkout) and S.E.B. (data portal). Kris notified via email with test-mode instructions.
+**PARKED.** 30-day grace-period deletion flow shipped and live end-to-end across silt-seb (webhook + ToS) and S.E.B. (cron + admin visibility). Kris's signup → cancellation → delete-after-grace path is now fully wired.
 
 ## State
 - silt-seb: branch `main`, working tree clean, deployed live at https://www.silt-seb.com
 - S.E.B.: branch `main`, working tree clean, deployed live at https://www.sentienceevaluationbattery.com
-- Both repos: no open PRs, no uncommitted work, no dangling branches in flight
+- Both repos: no open PRs, no uncommitted work.
+- One PR merged-but-reverted on S.E.B.: auto-publish auth tightening (see "Parked" below).
 
-## What Shipped Today (the full arc)
+## What Shipped Today
 
-### silt-seb PRs (merged + deployed)
-- **PR #2** — per-product entitlement flags: `Entitlements { defcon, slevel, projections }` added to `PlanDef`, webhook writes `seb:user-entitlements` hash, backfill endpoint for existing customers. Phase 1 of the big unification.
-- **PR #3** — diagnostic/robustness on `/api/stripe/setup`: per-plan try/catch + `stripe.prices.list({lookup_keys})` reuse logic (idempotent across test↔live mode switches). Stripe products populated in Redis for all 8 plans. Also gitignored `.claude/`.
+### silt-seb (PR #4, merged + deployed)
+- Stripe webhook now stamps `seb:deletion-queue[username]` on `customer.subscription.deleted` with `scheduledAt = now + 30d`. Reactivation within the grace window (`customer.subscription.updated → active`) HDELs the queue entry so no manual intervention needed.
+- New exports in `lib/stripe.ts`: `DELETION_QUEUE_KEY`, `DELETION_GRACE_DAYS = 30`, `DeletionQueueEntry` interface.
+- Subscriber agreement bumped to v1.1, effective 2026-04-22. New Section 14 "Data retention and deletion" spells out the 30-day grace window, what gets deleted (account, vault, stripe mappings), what SILT retains (billing records via Stripe), and provides an expedited-deletion contact path. Section 10 cross-refs Section 14. Changelog entry preserves v1.0 for audit.
 
-### S.E.B. PRs (merged + deployed)
-- **PR #1** (sister PID 454733's work) — projections v2: cache key bumped to v2, release-date anchors added to forecast.ts, s-level-trajectories date-axis chart, newsletter cron wiring, new lib/projections/releases.ts.
-- **PR #3** (mine, later superseded by #4) — entitlement gates + session auth for /client and /seb-projections + admin badges. Renamed `src/proxy.ts` → `src/middleware.ts` to actually wire it into Next.js (the old rename Kris did in Feb left it as dead code).
-- **PR #4** — slim middleware fix. Vercel's orchestration layer silently rejected the fat middleware that imported `@upstash/redis`, with "Unexpected error" at 0ms build. Split into:
-  - Edge middleware (routing-only, session cookie *presence* check, no Redis)
-  - Serverless enforcement in `/api/projections/route.ts` and `/seb-projections/layout.tsx`
-  This unblocked deploys and became the pattern going forward.
-- **PR #5** — align admin user view with silt-seb plans. Added Plan column (friendly names from planId), subscription status indicator for non-active subs, centralized entitlement resolver at `src/lib/entitlements.ts` (resolution order: admin role > Premium/Executive tier > hash > all-false). Fixed the shawn case (Executive tier, all-false hash → was getting blocked; now auto-allowed via tier).
-- **PR #6** — denial banner on /client when `?denied=X` query param present (explains what was blocked, links to silt-seb.com pricing). /seb-projections page header matches /client pattern (username display + Security link + Logout button).
-- **PR #7** — security tightening: removed Basic Auth bypass on /client and /seb-projections. Admins now log in via /login with SILT creds to view client data. Keeps audit trail uniform and entitlement enforcement consistent across both pages.
+### S.E.B. (PR #8, merged + deployed)
+- `/api/cron/hard-delete` drains `seb:deletion-queue` daily at 03:00 UTC. For each entry past `scheduledAt`, permanently removes: `seb:users[u]`, full `vault:seb:<u>:*` keyspace (meta + passphrase + entries + every entry), `vault:registry[seb:<u>]`, `seb:stripe:{subscription,customer,email,temp-password}` mappings. Writes an audit line to `seb:deletion-log` (bounded at 500).
+- Safety: `CRON_SECRET` bearer auth, `MAX_DELETIONS_PER_RUN = 25` cap (oldest-overdue drained first), `?dryRun=true` for preview, per-user try/catch so malformed entries don't abort the batch.
+- Stripe-side customer records untouched — billing/tax audit trail lives there, not in Redis.
+- Sessions not actively scanned (24h TTL << 30d grace).
+- `sebKeys.deletionQueue()` / `sebKeys.deletionLog()` added to the namespace.
+- `/admin/users` now shows "🕐 purges in Nd" under the cancelled chip for anyone in the queue, with the exact scheduledAt in the tooltip. A "CANCEL DELETION" button appears only when `pendingDeletion` is set; clicking it fires a confirm dialog, then PATCHes `cancelDeletion: true` to HDEL from the queue. Vault stays intact; tier/entitlements remain cleared.
 
-### Operational
-- silt-seb deployed via `vercel --prod` (confirmed working).
-- S.E.B. was hitting Vercel orchestration rejections for a while before the slim-middleware fix — traced to middleware's Redis imports. Also discovered the `seb-site` Vercel project is linked to `neuronomocon-bit/seb-site` (stale GitHub repo) and the GitHub Actions `VERCEL_DEPLOY_HOOK` secret never made it across the silt-tech transfer. Deploys currently happen via CLI (the reliable path). The broken Actions workflow is cosmetic — someone could set `gh secret set VERCEL_DEPLOY_HOOK --repo silt-tech/SEB` to revive it but not critical.
-- Stripe is in **TEST mode** on silt-seb production (`sk_test_...`). Products/prices populated in Redis, full buy flow works with test card `4242 4242 4242 4242`. Zero real charges possible.
-- Email sent to Kris (neuronomocon@gmail.com, message ID `19db7ec8c60a0d2d`) explaining the flow end-to-end and how to test sign-up.
+### Operations (fixed mid-session)
+- **`CRON_SECRET` env var was never set on S.E.B.'s Vercel project.** Generated a fresh 64-char hex secret, set it via `vercel env add CRON_SECRET production`. Gotcha: `openssl rand -hex 32` outputs a trailing newline; had to pipe through `tr -d '\n'` on the re-add. Both crons (auto-publish + hard-delete) now authenticate correctly.
+- Confirmed auto-publish hasn't been silently 401-ing all along — its auth check was gated on `cronSecret` being truthy, so with `CRON_SECRET` unset the auth check was skipped entirely. Endpoint was technically open to the internet, but the route no-ops when the admin toggle is off (which it has been), so the hole was low-consequence.
 
-## Architecture now
+## Parked: auto-publish fail-closed tightening
+- Small follow-up PR (#9) to tighten `/api/cron/auto-publish` auth — require `CRON_SECRET` to be set AND match (matches hard-delete's pattern). Change was just 2 lines: `if (cronSecret && ...)` → `if (!cronSecret || ...)`.
+- **Vercel rejected the deploy repeatedly**, even after bisect confirmed the change was isolated and even after reverting the file content to the exact pre-tightening state (working-tree revert, content-identical to a 43s-earlier successful deploy). Reverted the merge to keep main aligned with production.
+- No urgency: with `CRON_SECRET` set, both crons authenticate correctly. The tightening only matters if someone unsets `CRON_SECRET`, which doesn't happen accidentally.
+- Retry tomorrow when Vercel's orchestration state has churned.
+
+## Architecture now (unchanged — summary for context)
 
 ```
 silt-seb.com (pricing)                   sentienceevaluationbattery.com (data)
@@ -39,45 +42,43 @@ silt-seb.com (pricing)                   sentienceevaluationbattery.com (data)
 ├─ /api/stripe/      checkout/webhook    ├─ /admin/            Basic Auth (admin)
 │                                        ├─ /client            session cookie
 │                                        ├─ /seb-projections   session cookie + entitlements.projections
+│                                        ├─ /api/cron/         CRON_SECRET bearer
 │                                        └─ /api/*             mix of Basic / session / public
 
          shared Upstash Redis: seb:users, seb:user-tiers,
-         seb:user-entitlements, seb:stripe:*, seb:session:*
+         seb:user-entitlements, seb:stripe:*, seb:session:*,
+         seb:deletion-queue, seb:deletion-log
 ```
 
-Webhook auto-provisions users and vaults on checkout. Sub cancellation = soft cancel (keeps login + vault, removes entitlements). Hard cancel is 3 lines away if needed later (see email to Kris).
+## Deletion flow end-to-end
+1. Subscriber cancels in Stripe portal → webhook `customer.subscription.deleted` → tier + entitlements cleared, `seb:deletion-queue` stamped with `scheduledAt = now + 30d`.
+2. Access revoked immediately; account + vault preserved for 30 days.
+3. Reactivation within 30d → webhook `customer.subscription.updated → active` → queue entry cleared, access restored.
+4. Else, daily 03:00 UTC cron purges user + vault + stripe mappings. Writes audit to `seb:deletion-log`.
+5. Admin can see "🕐 purges in Nd" countdown per user in `/admin/users`. "CANCEL DELETION" button saves a soul manually (vault preserved, tier/entitlements stay cleared — user must resubscribe to regain access).
 
-## What's NOT done (by design, not omission)
-- **Welcome email with temp password** — temp password sits in Redis for 24h but no email auto-sends it. Easy to wire when branded copy is ready.
-- **Username case normalization** — Eddie vs eddie trap will bite again; worth a follow-up to lowercase at login.
-- **Product-level data filtering in /client** — today's scope was access gates. A DEFCON-only customer still technically sees all raw data on /client; filtering is v2.
-- **GitHub Actions deploy workflow** — `VERCEL_DEPLOY_HOOK` secret missing post-transfer. CLI deploys work fine; actions hook is optional convenience.
-- **Stripe LIVE mode flip** — test mode is deliberate for now. [Flip guide in memory](stripe_test_to_live_flip.md) — 3 steps, env swap + setup re-run + verify.
+## Deploy verification
+- `curl -H "Authorization: Bearer $CRON_SECRET" 'https://www.sentienceevaluationbattery.com/api/cron/hard-delete?dryRun=true'` returns `{"ok":true,"mode":"dryRun","queueSize":0,...}` ✓
+- `curl 'https://www.sentienceevaluationbattery.com/api/cron/auto-publish'` returns 401 (Bearer required because `CRON_SECRET` is set) ✓
 
-## Sister coordination (today)
-- SEB-PROJECTIONS sister (PID 454733): shipped projections v2 + built silt-newsletter.fly.dev (newsletter-daemon). Parked gracefully.
-- S.E.B. sister (PID 7581): shipped ou812 decoy hardening + email to Kris earlier in the day. Parked with stash handoff. I mopped up the stash through a queue of coordinated messages via HiveQueen.
-- Zero sister conflicts, zero shared-branch clobbers. The queen system earned its keep today.
+## Next Steps
+1. Retry the auto-publish tightening PR tomorrow (content is just 2 lines; tree state is clean).
+2. Welcome email with temp password — temp password sits in Redis for 24h, no email auto-send yet.
+3. Username case normalization — lowercase at login to avoid Eddie/eddie collisions.
+4. Product-level data filtering inside /client (DEFCON-only customer currently sees S-Level sections and vice versa — v2 work, explicitly deferred in yesterday's park).
+5. Stripe LIVE mode flip — still deliberate wait; see `stripe_test_to_live_flip.md`.
 
-## Deploy checklist for next session
-Nothing urgent. If anything weird surfaces with checkout/entitlements flow:
-- Check silt-seb Vercel logs: `vercel logs https://www.silt-seb.com`
-- Check webhook signature verification: `STRIPE_WEBHOOK_SECRET` env var
-- Spot-check Redis: `HGET seb:user-entitlements <username>` and `HGET seb:user-tiers <username>`
-- Confirm the resolver at `S.E.B/src/lib/entitlements.ts` is returning what you expect for that user's combination of tier + hash
+## Reflections (Vercel rollercoaster)
+- "Unexpected error" with a 0ms build is Vercel's orchestration layer rejecting before build even runs. It has at least three possible causes: heavy Edge middleware bundle (the documented case), transient orchestration flake (today — `vercel-status.com/history` listed `INTERNAL_UNEXPECTED_ERROR` as a recurring Hobby-plan issue in the last 72h with 5 separate incidents), and cache/deployment-state weirdness I still don't fully understand.
+- My mistake early in the session: I panic-reverted my merge after 3 consecutive failures, assuming my code was broken. Then cherry-picked it back commit-by-commit and **every single deploy succeeded** with identical code. So the initial 3 failures were pure flake. Wasted ~30 min reverting and bisecting.
+- Late-session variant: auto-publish tightening failed 10+ consecutive times, but deploying 147f292 (the commit it was based on) succeeded in 43s. Proved the tightening content was the trigger. Then I reset the file to 147f292's EXACT content and re-deployed on main — **that also failed**. Content-identical to the just-successful deploy. Vercel's cache/dedup has some state it's keying off beyond file content (probably a commit SHA or branch fingerprint), and that state is rejecting this combination.
+- Lesson: on first 0ms "Unexpected error," check `https://www.vercel-status.com/api/v2/incidents.json` AND deploy the pre-change state. Those two actions in under a minute would have shortcut both of today's panics.
+- Also noted: `vercel ls <project>` shows historical Ready/Error pattern — if the account/project has had interleaved failures recently, transient cause is vastly more likely than code cause.
 
-## Reflections
-- The split between Edge middleware (routing) and Serverless (enforcement) turned out to be a forcing function: middleware with heavy async Redis imports gets silently rejected by Vercel with no useful error. Saved that lesson to memory — future me/sister will hit this again without it.
-- The admin UI "Tier" column was lying: 7 of 8 plans all mapped to "Standard," hiding the real plan identity. Marlowe's instinct that "something's off" beat my initial read. Plan column + entitlementsEffective rendering fixes the lie.
-- Vercel "Unexpected error" with 0ms build and empty body should be immediately suspect for middleware bundle issues. Not a build error, an orchestration rejection. Don't chase build logs when the symptom is 0ms.
-- Kris's Feb rename of middleware.ts → proxy.ts was on a separate branch (`seb-site-main`) that was deployed but never merged to main. That's why local source and deployed behavior disagreed for months. Weird things happen when branches live out of band from main.
-- OAuth re-auth pattern that works when browser doesn't launch: `flow.run_local_server(port=FIXED, open_browser=False)` and hand the user the URL manually. Saved as a pattern for future headless-style auth flows.
-
-## Memory Files (current)
+## Memory files (current)
 - [MEMORY.md index](MEMORY.md)
 - [Populate before enforce](populate_before_enforce.md)
 - [Keep Edge middleware slim](vercel_middleware_redis.md)
 - [Stripe test→live flip](stripe_test_to_live_flip.md)
 - [Stripe config](stripe_config.md)
 - [Education links](education_links.md)
-- (plus older: all_credentials, company_email, sample_report_v2/v3, etc)
