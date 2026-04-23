@@ -6,7 +6,10 @@ import {
   serializeEntitlements,
   NO_ENTITLEMENTS,
   USER_ENTITLEMENTS_KEY,
+  DELETION_QUEUE_KEY,
+  DELETION_GRACE_DAYS,
   type Entitlements,
+  type DeletionQueueEntry,
 } from "@/lib/stripe";
 import { getRedis } from "@/lib/redis";
 import { headers } from "next/headers";
@@ -215,6 +218,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     await getRedis().hset(USER_ENTITLEMENTS_KEY, {
       [username]: serializeEntitlements(entitlements),
     });
+    // Reactivation within the grace window — abort any scheduled hard delete.
+    const wasPending = await getRedis().hdel(DELETION_QUEUE_KEY, username);
+    if (wasPending) {
+      console.log(`↩️  Pending hard-delete cancelled for ${username} (subscription reactivated)`);
+    }
   } else if (status === "past_due" || status === "unpaid") {
     // Keep tier + entitlements but flag status
     console.warn(`⚠️ Subscription ${status} for ${username}`);
@@ -247,10 +255,28 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   const customer = typeof stored === "string" ? JSON.parse(stored) : stored;
   const username = (customer as Record<string, string>).username;
+  const email = (customer as Record<string, string>).email;
 
-  // Remove tier AND entitlements (fully revoke access)
+  // Remove tier AND entitlements (soft cancel — immediate access revocation)
   await getRedis().hdel("seb:user-tiers", username);
   await getRedis().hdel(USER_ENTITLEMENTS_KEY, username);
+
+  // Stamp the hard-delete grace queue. The S.E.B. cron at /api/cron/hard-delete
+  // will purge the user's account + vault + stripe mappings once scheduledAt
+  // passes. Reactivation within the grace window clears this entry.
+  const now = new Date();
+  const scheduledAt = new Date(now.getTime() + DELETION_GRACE_DAYS * 86400_000);
+  const queueEntry: DeletionQueueEntry = {
+    scheduledAt: scheduledAt.toISOString(),
+    cancelledAt: now.toISOString(),
+    email,
+    customerId,
+    subscriptionId: subscription.id,
+    planId: subscription.metadata?.seb_plan_id ?? "",
+  };
+  await getRedis().hset(DELETION_QUEUE_KEY, {
+    [username]: JSON.stringify(queueEntry),
+  });
 
   // Update subscription status
   await getRedis().set(
@@ -262,12 +288,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       tier: "none",
       entitlements: NO_ENTITLEMENTS,
       status: "cancelled",
-      email: (customer as Record<string, string>).email,
-      cancelledAt: new Date().toISOString(),
+      email,
+      cancelledAt: now.toISOString(),
+      hardDeleteAt: scheduledAt.toISOString(),
     })
   );
 
-  console.log(`❌ Subscription cancelled for ${username} — access revoked`);
+  console.log(
+    `❌ Subscription cancelled for ${username} — access revoked, ` +
+    `hard delete scheduled for ${scheduledAt.toISOString()} (${DELETION_GRACE_DAYS}d grace)`
+  );
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
