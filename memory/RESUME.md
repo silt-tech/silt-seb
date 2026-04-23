@@ -1,42 +1,76 @@
-# Resume Point — 2026-04-22
+# Resume Point — 2026-04-22 (entitlements session)
 
 ## Current Task
-Repo migration housekeeping. silt-seb was transferred from `izabael/` to `silt-tech/` org today.
+**Per-product entitlement flags for Stripe subscriptions** — flow from sign-up → sign-in → data access. Phase 1 (silt-seb write side) shipped as PR #2, open for review. Phase 2 (S.E.B. read/enforcement side) deferred — a sister has uncommitted projections work on S.E.B.'s main.
 
 ## State
-- Branch: `izabael/add-grok-4.20` — 8 commits ahead of `origin/main`, no PR open
-- Origin: `https://github.com/silt-tech/silt-seb.git` (transferred 2026-04-22)
-- Working tree: CLAUDE.md has one pending edit (repo path update) — committed during this park
+- Branch: `izabael/entitlements-flags` — pushed, PR #2 open
+- PR: https://github.com/silt-tech/silt-seb/pull/2
+- Working tree: clean
+- Not yet deployed to prod — PR needs human review first
 
-## Completed This Session (2026-04-22)
-1. **Transferred `izabael/silt-seb` → `silt-tech/silt-seb`** via `gh api` POST /transfer
-2. Updated local git remote to new silt-tech URL — fetch/push verified
-3. Updated project CLAUDE.md + memory/MEMORY.md with new repo path
-4. Investigated duplicate repos at izabael/ vs silt-tech/:
-   - `seb-demos` and `seb-projections` existed at BOTH orgs
-   - izabael/ copies were abandoned stubs (2 commits, 1 KB, frozen since 2026-03-27)
-   - silt-tech/ copies are canonical (30+ commits, built-out)
-5. **Archived** `izabael/seb-demos` and `izabael/seb-projections` via PATCH /repos (not deleted — user preferred archive). Descriptions updated to point at silt-tech canonicals.
+## ⚠️ CRITICAL ORDERING — do not violate
+The migration has 3 steps that MUST run in this order. Skipping or reordering = customers get 403'd on data they paid for.
 
-## Merged + Shipped
-- **PR #1 merged to main** at 2026-04-22T20:11 — merge SHA `c03004c`. All 9 stacked commits landed (Grok 4.20 + Grok 4.1 Fast, /press nav, landing v2.0 catch-up, Sample Report PDF overhaul, CLAUDE.md repo-path update).
-- **Deployed to production** via `vercel --prod` — live at https://www.silt-seb.com (build 11s, deploy 23s). Reminder: GitHub auto-deploy integration is intentionally broken post-transfer; ship via CLI.
-- **Branch cleanup** — deleted `izabael/add-grok-4.20` (local + remote) and `izabael/cleanup-pre-refactor` (local + remote, had 0 commits ahead). Pruned stale tracking refs. Repo is now single-branch: just `main`.
+```
+① Merge + deploy silt-seb PR #2          (webhook starts writing seb:user-entitlements)
+② Run backfill on prod                    (populates existing customers — they had no hash before)
+③ THEN land S.E.B. phase 2 gates          (enforce — safe now, hash exists for everyone)
+```
 
-## Open Action (needs human)
-- None active for silt-seb. Deferred work (not this session): transfer `izabael/SILT-PC` + `izabael/silt-seb-twitter` to silt-tech/ when ready. Decision on `izabael/ai-playground` org still pending.
+If step ③ ships before ②, every current customer gets locked out of products they legitimately paid for until backfill runs. Don't do that.
 
-## Deferred (per user — "leave 2 and 3 alone")
-User explicitly said NOT to touch these this session:
-- `izabael/ai-playground` — ambiguous whether it's a SILT product (powers izabael.com as "flagship instance of SILT AI Playground") or Izabael personal infra. Stays at izabael/ for now.
-- `izabael/SILT-PC` + `izabael/silt-seb-twitter` — both are clearly SILT-branded, both still at izabael/. Eventually should move to silt-tech/ but not this session.
+## The problem being solved
+Stripe has 8 plans. The webhook was collapsing all 7 non-premium plans to `tier: "standard"`, so:
+- DEFCON-only ($300) customer = Complete-Bundle ($650) customer in admin
+- Projections add-on was invisible at every layer
+- `/seb-projections` and `/api/projections` had zero entitlement gating — open to every signed-in user
 
-## Context for Future Sessions
-- The convention going forward: **all official SILT repos live at silt-tech/**. Izabael personal stuff (izabael-com, izabael-home, war-dreams, izaplayer, izadaemon, sss-launcher, lucid-dream-journal, alchemy-pathworking, forks) stays at izabael/.
-- `silt-tech/` roster now: SEB, silt-site, siltcloud, silt-seb (new), silt-forge, silt-atlas, seb-demos, seb-projections, silt-guardrail, silt-vault, silt-gateway, silt-pipeline, QuantumProofVault = 13 repos
-- `izabael/add-grok-4.20` branch has a lot stacked: Grok 4.20 + Grok 4.1 Fast models, /press nav, landing v2.0 catch-up, Sample Report PDF overhaul (Behavioral Observations page, redacted names, live-Redis randomization). Ripe for a PR when the human is ready.
+## Design choice (confirmed by Marlowe)
+**Entitlement flags, not more tiers.** Three booleans per user: `{ defcon, slevel, projections }`. Tier (`standard|premium|executive`) stays but becomes orthogonal — it now means *support level only*, not data access. Flags compose (8 plans = 3 booleans × math) and leave room for a 4th product later.
+
+## Completed This Session
+1. **`lib/stripe.ts`** — Added `Entitlements` interface, filled in entitlement sets for all 8 plans, added helpers (`serializeEntitlements`, `parseEntitlements`, `USER_ENTITLEMENTS_KEY`, `NO_ENTITLEMENTS`, `ALL_ENTITLEMENTS`)
+2. **`app/api/stripe/checkout/route.ts`** — passes entitlements JSON in Checkout session metadata + subscription metadata
+3. **`app/api/stripe/webhook/route.ts`** — writes `seb:user-entitlements` hash on `checkout.completed` and `subscription.updated`, clears on `subscription.deleted`. Falls back to plan lookup if metadata missing (for pre-existing subs)
+4. **`app/api/stripe/backfill-entitlements/route.ts` (new)** — GET = dry-run report, POST = migrate. Secret-gated with `seb-stripe-backfill-2026`. SCANs all `seb:stripe:subscription:*`, writes correct entitlements.
+
+Build passed clean (Next.js 16, TypeScript, no warnings).
+
+## Next Steps (Phase 2 — S.E.B. repo, next session)
+
+**Wait for sister to park her S.E.B. projections work first.** Her uncommitted files on S.E.B. main when this session started:
+- `src/app/api/projections/route.ts` (cache key bump to v2)
+- `src/components/projections/s-level-trajectories.tsx` (+69 lines)
+- `src/lib/projections/forecast.ts` (+41 lines)
+- `src/lib/projections/types.ts` (+4 lines)
+- `src/proxy.ts`, `vercel.json` (minor)
+- NEW: `src/app/api/cron/newsletter/`, `src/lib/projections/releases.ts`
+
+When she parks, rebase fresh and:
+1. **`/api/projections`** — check entitlements, 403 if `!entitlements.projections`
+2. **`/seb-projections` page** — same gate, nicer "upgrade" redirect if denied
+3. **`/api/client/results`** — filter response payload so users only see data for products they're entitled to
+4. **Admin `/admin/users` page** — add per-user badges (🛡 DEF · 📊 SLV · 📈 PRJ), editable like tier dropdown
+5. **`/api/admin/users` route** — include entitlements in user list response, accept them in PATCH
+6. **After deploy**: run silt-seb backfill on prod to populate existing customers (dry-run first)
+
+## Deploy Checklist (after PR #2 merge) — this is step ① + ② above
+- [ ] ① `vercel --prod` (CLI, not GitHub integration)
+- [ ] ② `curl 'https://www.silt-seb.com/api/stripe/backfill-entitlements?secret=seb-stripe-backfill-2026'` — **GET** first for dry-run
+- [ ] Compare report against Stripe dashboard — do rows match expected entitlements?
+- [ ] `curl -X POST` same URL to actually write
+- [ ] Spot-check Redis: `HGET seb:user-entitlements <username>` for a known customer
+- [ ] Only AFTER all above check out: proceed to step ③ (S.E.B. gates, next session)
+
+## Hive Coordination Notes
+- `iam --done` cleared at park
+- Did NOT touch S.E.B. repo at all this session — sister has live uncommitted work there
+- Feature branch convention respected: `izabael/entitlements-flags`
+- Queen conflicts: none
 
 ## Reflections
-- Duplicate repos on 2026-03-27 were a quiet footgun — same-day creation at both orgs, same scaffolding SHAs, then only one side kept moving. Archive banner is the right signal for abandoned husks; deleting would have cost `delete_repo` scope refresh which the human didn't want to do.
-- `gh repo transfer` is async — the API response shows pre-transfer state. Poll or just wait a few seconds before verifying.
-- When in doubt about whether something is "SILT official" vs "Izabael personal," ask. The ai-playground question had a real answer only the human could give.
+- The user intuited the exact problem before I'd even fully traced it: 3 admin levels ≠ 8 product combinations. That's the kind of "something's off about this" instinct worth trusting — the model/reality mismatch was hiding in plain sight.
+- Keeping tier separate from entitlements is the quiet win. Tomorrow when the human wants to say "Premium customers get priority email support but still only see data for products they bought" — that sentence doesn't even typecheck in the old world. Now it does.
+- Hive discipline paid off: S.E.B. dirty working tree would have burned me if I'd just `git diff HEAD` without reading it first. The sister's cache-key v2 bump is related-but-orthogonal work — belongs to her PR, not mine.
+- Backfill endpoint has a GET dry-run mode. Always give migration scripts a dry-run. Future-me (or future-sister) will thank present-me.

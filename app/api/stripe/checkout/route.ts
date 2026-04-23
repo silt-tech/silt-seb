@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { stripe, getPlan } from "@/lib/stripe";
+import { stripe, getPlan, serializeEntitlements } from "@/lib/stripe";
 import { getRedis } from "@/lib/redis";
 import type Stripe from "stripe";
 
@@ -31,14 +31,16 @@ export async function POST(req: Request) {
 
     const origin = new URL(req.url).origin;
 
+    const entitlementsJson = serializeEntitlements(plan.entitlements);
+
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cancel`,
-      metadata: { seb_plan_id: planId, tier: plan.tier },
+      metadata: { seb_plan_id: planId, tier: plan.tier, entitlements: entitlementsJson },
       subscription_data: {
-        metadata: { seb_plan_id: planId, tier: plan.tier },
+        metadata: { seb_plan_id: planId, tier: plan.tier, entitlements: entitlementsJson },
       },
       allow_promotion_codes: true,
       consent_collection: {
