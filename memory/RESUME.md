@@ -9,6 +9,17 @@
 - Working tree: clean
 - Not yet deployed to prod — PR needs human review first
 
+## ⚠️ CRITICAL ORDERING — do not violate
+The migration has 3 steps that MUST run in this order. Skipping or reordering = customers get 403'd on data they paid for.
+
+```
+① Merge + deploy silt-seb PR #2          (webhook starts writing seb:user-entitlements)
+② Run backfill on prod                    (populates existing customers — they had no hash before)
+③ THEN land S.E.B. phase 2 gates          (enforce — safe now, hash exists for everyone)
+```
+
+If step ③ ships before ②, every current customer gets locked out of products they legitimately paid for until backfill runs. Don't do that.
+
 ## The problem being solved
 Stripe has 8 plans. The webhook was collapsing all 7 non-premium plans to `tier: "standard"`, so:
 - DEFCON-only ($300) customer = Complete-Bundle ($650) customer in admin
@@ -44,12 +55,13 @@ When she parks, rebase fresh and:
 5. **`/api/admin/users` route** — include entitlements in user list response, accept them in PATCH
 6. **After deploy**: run silt-seb backfill on prod to populate existing customers (dry-run first)
 
-## Deploy Checklist (after PR #2 merge)
-- [ ] `vercel --prod` (CLI, not GitHub integration)
-- [ ] `curl 'https://www.silt-seb.com/api/stripe/backfill-entitlements?secret=seb-stripe-backfill-2026'` — **GET** first for dry-run
-- [ ] Compare report against Stripe dashboard
+## Deploy Checklist (after PR #2 merge) — this is step ① + ② above
+- [ ] ① `vercel --prod` (CLI, not GitHub integration)
+- [ ] ② `curl 'https://www.silt-seb.com/api/stripe/backfill-entitlements?secret=seb-stripe-backfill-2026'` — **GET** first for dry-run
+- [ ] Compare report against Stripe dashboard — do rows match expected entitlements?
 - [ ] `curl -X POST` same URL to actually write
 - [ ] Spot-check Redis: `HGET seb:user-entitlements <username>` for a known customer
+- [ ] Only AFTER all above check out: proceed to step ③ (S.E.B. gates, next session)
 
 ## Hive Coordination Notes
 - `iam --done` cleared at park
