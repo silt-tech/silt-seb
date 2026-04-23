@@ -28,11 +28,10 @@
 - **`CRON_SECRET` env var was never set on S.E.B.'s Vercel project.** Generated a fresh 64-char hex secret, set it via `vercel env add CRON_SECRET production`. Gotcha: `openssl rand -hex 32` outputs a trailing newline; had to pipe through `tr -d '\n'` on the re-add. Both crons (auto-publish + hard-delete) now authenticate correctly.
 - Confirmed auto-publish hasn't been silently 401-ing all along — its auth check was gated on `cronSecret` being truthy, so with `CRON_SECRET` unset the auth check was skipped entirely. Endpoint was technically open to the internet, but the route no-ops when the admin toggle is off (which it has been), so the hole was low-consequence.
 
-## Parked: auto-publish fail-closed tightening
-- Small follow-up PR (#9) to tighten `/api/cron/auto-publish` auth — require `CRON_SECRET` to be set AND match (matches hard-delete's pattern). Change was just 2 lines: `if (cronSecret && ...)` → `if (!cronSecret || ...)`.
-- **Vercel rejected the deploy repeatedly**, even after bisect confirmed the change was isolated and even after reverting the file content to the exact pre-tightening state (working-tree revert, content-identical to a 43s-earlier successful deploy). Reverted the merge to keep main aligned with production.
-- No urgency: with `CRON_SECRET` set, both crons authenticate correctly. The tightening only matters if someone unsets `CRON_SECRET`, which doesn't happen accidentally.
-- Retry tomorrow when Vercel's orchestration state has churned.
+## Auto-publish fail-closed tightening — SHIPPED (after one late-night reattempt)
+- Small follow-up (commit `f5827fd`) tightens `/api/cron/auto-publish` auth — require `CRON_SECRET` to be set AND match (matches hard-delete's pattern). Change was just 2 lines: `if (cronSecret && ...)` → `if (!cronSecret || ...)`.
+- Earlier tonight this deploy failed 10+ times in a row with the orchestration rejection (including content-identical to a 43s-earlier successful deploy). Reverted.
+- Retried later the same session — **deployed clean in 38s on first try.** Vercel's rejection was fully transient / cache-state noise, zero code issue. Lesson reinforced: the 0ms error isn't deterministic; sometimes the same commit that failed 10× will deploy 15 min later.
 
 ## Architecture now (unchanged — summary for context)
 
