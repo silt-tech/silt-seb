@@ -122,6 +122,26 @@ export function getPlan(id: string): PlanDef | undefined {
  */
 export const USER_ENTITLEMENTS_KEY = "seb:user-entitlements";
 
+/**
+ * Redis key for the hard-delete grace queue.
+ * HASH seb:deletion-queue — username → JSON { scheduledAt, cancelledAt, email, customerId, subscriptionId, planId }
+ * Written when a subscription is cancelled. Cleared on reactivation.
+ * Drained by the S.E.B. cron at /api/cron/hard-delete once scheduledAt passes.
+ */
+export const DELETION_QUEUE_KEY = "seb:deletion-queue";
+
+/** Grace period between soft cancel and hard delete, in days. */
+export const DELETION_GRACE_DAYS = 30;
+
+export interface DeletionQueueEntry {
+  scheduledAt: string;   // ISO — when hard delete becomes eligible
+  cancelledAt: string;   // ISO — when the subscription was cancelled
+  email: string;
+  customerId: string;
+  subscriptionId: string;
+  planId: string;
+}
+
 /** Serialize entitlements for Redis hash value. */
 export function serializeEntitlements(e: Entitlements): string {
   return JSON.stringify(e);
