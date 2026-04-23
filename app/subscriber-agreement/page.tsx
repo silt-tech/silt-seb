@@ -48,7 +48,7 @@ export default function SubscriberAgreementPage() {
           <span style={{ fontSize: "9pt", fontWeight: 700, color: "#fff", background: "#9333ea", padding: "2px 10px", borderRadius: 4 }}>
             NORMATIVE
           </span>
-          <span style={{ fontSize: "9pt", color: "#94a3b8" }}>Version 1.0 &middot; Effective March 31, 2026</span>
+          <span style={{ fontSize: "9pt", color: "#94a3b8" }}>Version 1.1 &middot; Effective April 22, 2026</span>
         </div>
       </div>
 
@@ -132,7 +132,7 @@ export default function SubscriberAgreementPage() {
 
       <Section num={10} title="Term and termination">
         <P>
-          Subscriptions are billed monthly or annually as selected at purchase. Either party may terminate by providing 30 days&apos; written notice. Upon termination, Subscriber&apos;s access to the client portal and vault is revoked. Confidentiality and restricted use obligations (Sections 4, 5, and 7) survive termination indefinitely.
+          Subscriptions are billed monthly or annually as selected at purchase. Either party may terminate by providing 30 days&apos; written notice. Upon termination, Subscriber&apos;s access to the client portal and vault is revoked immediately. Deletion of Subscriber data following termination is governed by the retention schedule in Section 14. Confidentiality and restricted use obligations (Sections 4, 5, and 7) survive termination indefinitely.
         </P>
       </Section>
 
@@ -154,10 +154,40 @@ export default function SubscriberAgreementPage() {
         </P>
       </Section>
 
+      <Section num={14} title="Data retention and deletion">
+        <Box title="30-day grace period after cancellation">
+          Upon cancellation of a subscription, Subscriber&apos;s account enters a 30-day grace period. Access to all Data Products is revoked immediately, but the Subscriber&apos;s account credentials and encrypted data vault are preserved during this window. Reactivating the subscription within 30 days restores full access without data loss.
+        </Box>
+        <P>
+          After the 30-day grace period expires, SILT permanently deletes the following from its systems:
+        </P>
+        <ul style={{ paddingLeft: 18, margin: 0 }}>
+          <Li>Subscriber&apos;s account (username and password credential hash)</Li>
+          <Li>Subscriber&apos;s encrypted data vault, including all delivered Evaluation Data and watermarked copies held on SILT&apos;s behalf</Li>
+          <Li>Internal mappings between the Subscriber account and payment processor identifiers</Li>
+          <Li>Session records, access logs, and provisional credentials associated with the account</Li>
+        </ul>
+        <P>
+          Deletion is permanent and irreversible. Once executed, SILT cannot recover Subscriber&apos;s prior account state, vault contents, or historical delivered data.
+        </P>
+        <P>
+          SILT retains billing, invoicing, and transaction records required for tax, accounting, anti-fraud, and legal compliance purposes in accordance with applicable law. These records are maintained primarily by SILT&apos;s payment processor (Stripe) and do not include Evaluation Data.
+        </P>
+        <P>
+          Confidentiality and restricted use obligations under Sections 4, 5, and 7 survive deletion of the Subscriber account and continue to apply to any Evaluation Data previously delivered to Subscriber, including data retained in Subscriber&apos;s own records or systems.
+        </P>
+        <P>
+          Subscriber may request expedited deletion at any time after cancellation by contacting <a href="mailto:info@sentientindexlabs.com" style={{ color: "#9333ea" }}>info@sentientindexlabs.com</a>. SILT may also delete Subscriber data earlier than 30 days following termination for material breach of this Agreement.
+        </P>
+      </Section>
+
       <hr style={{ margin: "40px 0 24px", borderColor: "#e2e8f0" }} />
 
       <h2 style={{ fontSize: "14pt", fontWeight: 800, color: "#1a1a2e", marginBottom: 8 }}>Change log</h2>
       <ul style={{ paddingLeft: 18 }}>
+        <Li>
+          <strong style={{ color: "#1a1a2e" }}>v1.1</strong> (2026-04-22): Added Section 14 &mdash; data retention and deletion. 30-day grace period after cancellation before permanent deletion of account, vault, and associated mappings. Expedited-deletion request path and billing-record retention clarified. Section 10 updated to cross-reference Section 14.
+        </Li>
         <Li>
           <strong style={{ color: "#1a1a2e" }}>v1.0</strong> (2026-03-31): Initial subscriber agreement covering data licensing, forensic watermarking consent, confidentiality, enforcement, and service terms.
         </Li>
